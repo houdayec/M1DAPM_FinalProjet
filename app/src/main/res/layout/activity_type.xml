@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="dapm.g1.final_project.activities.TypeActivity"
+    android:orientation="vertical"
+    android:background="@color/colorPrimaryDark">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="10dp">
+
+        <android.support.v7.widget.AppCompatSpinner
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/spinner"
+            android:background="@drawable/template_spinner_item"
+            android:textAlignment="center"
+            android:theme="@style/Spinner"
+            android:entries="@array/choicesTypeAnamorphosis">
+        </android.support.v7.widget.AppCompatSpinner>
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        >
+
+        <ImageButton
+            android:id="@+id/previousActivityButton"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:background="@color/colorPrimary"
+            android:src="@drawable/ic_keyboard_arrow_left_white_48dp"
+            android:layout_margin="20dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"/>
+
+        <ImageButton
+            android:id="@+id/nextActivityButton"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:background="@color/colorPrimary"
+            android:src="@drawable/ic_keyboard_arrow_right_white_48dp"
+            android:layout_margin="20dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"/>
+
+    </LinearLayout>
+
+</RelativeLayout>
