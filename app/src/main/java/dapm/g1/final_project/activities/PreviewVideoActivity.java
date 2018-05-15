@@ -12,6 +12,8 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.VideoView;
 
+import java.lang.reflect.Type;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -31,6 +33,8 @@ public class PreviewVideoActivity extends AppCompatActivity {
     @BindView(R.id.controlVideoButton)
     FloatingActionButton mControlVideoButton;
 
+    private Uri uriData;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,7 +42,7 @@ public class PreviewVideoActivity extends AppCompatActivity {
 
         ButterKnife.bind(this);
 
-        Uri uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
+        uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
         mVideoView.setVideoURI(uriData);
 
         mVideoView.start();
@@ -59,8 +63,11 @@ public class PreviewVideoActivity extends AppCompatActivity {
 
     @OnClick(R.id.validVideo)
     void validVideo(){
-        Intent nextActivity = new Intent(this, TypeActivity.class);
-        startActivity(nextActivity);
+        Intent intentType = new Intent(this, TypeActivity.class);
+        Bundle bundleArgs = new Bundle();
+        bundleArgs.putString("uri_video", uriData.toString());
+        intentType.putExtras(bundleArgs);
+        startActivity(intentType);
     }
 
 }
