@@ -9,7 +9,12 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!-- FEATURES -->
-    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -39,6 +44,14 @@
         <activity
             android:name=".activities.TypeActivity"
             android:label="@string/title_activity_type"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".activities.RecordVideoActivity"
+            android:label="@string/title_activity_record_video"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".activities.PreviewVideoActivity"
+            android:label="@string/title_activity_preview_video"
             android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
