@@ -59,15 +59,12 @@ public class MainActivity extends AppCompatActivity {
         // Changing transitions animations between activities
         overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
 
-        //Binding of ButterKnife to get view elements
+        // Binding of ButterKnife to get view elements
         ButterKnife.bind(this);
 
+        // Checking needed permissions
         if ( ContextCompat.checkSelfPermission( this, Manifest.permission.CAMERA ) != PackageManager.PERMISSION_GRANTED ) {
             ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.CAMERA}, REQUEST_VIDEO_CAPTURE);
-        }
-
-        if ( ContextCompat.checkSelfPermission( this, Manifest.permission.READ_EXTERNAL_STORAGE ) != PackageManager.PERMISSION_GRANTED ) {
-            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_EXTERNAL_STORAGE);
         }
     }
 
@@ -97,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //TODO REMOVE ?
     public void switchToNextActivity(){
         Intent nextActivityIntent = new Intent(this, TypeActivity.class);
         startActivity(nextActivityIntent);
@@ -142,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
                 //llay = new LinearLayout(this);
                 //llay.setOrientation(LinearLayout.HORIZONTAL);
 
-                int numberFrames = getFrameRateVideo(fileManager);
+                int numberFrames = VideoUtils.getFrameRateVideo(fileManager);
                 System.out.println("The video has a " + numberFrames + " frames / second");
 
                 intervalRefresh = 1000000/numberFrames;
@@ -161,6 +159,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Callback method for permissions requests
+     * @param requestCode
+     * @param permissions
+     * @param grantResults
+     */
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
@@ -174,32 +178,11 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     Toast.makeText(MainActivity.this, "Permission Denied!", Toast.LENGTH_SHORT).show();
                 }
+                if ( ContextCompat.checkSelfPermission( this, Manifest.permission.READ_EXTERNAL_STORAGE ) != PackageManager.PERMISSION_GRANTED ) {
+                    ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_EXTERNAL_STORAGE);
+                }
         }
     }
 
-    public int getFrameRateVideo(String path){
-        MediaExtractor extractor = new MediaExtractor();
-        int frameRate = 24; //may be default
-        try {
-            //Adjust data source as per the requirement if file, URI, etc.
-            extractor.setDataSource(path);
-            int numTracks = extractor.getTrackCount();
-            System.out.println("Number of frames in video : " + numTracks);
-            for (int i = 0; i < numTracks; ++i) {
-                MediaFormat format = extractor.getTrackFormat(i);
-                String mime = format.getString(MediaFormat.KEY_MIME);
-                if (mime.startsWith("video/")) {
-                    if (format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
-                        frameRate = format.getInteger(MediaFormat.KEY_FRAME_RATE);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            //Release stuff
-            extractor.release();
-        }
-        return frameRate;
-    }
+
 }

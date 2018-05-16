@@ -1,8 +1,9 @@
 <resources>
-    <string name="app_name">Final_Project</string>
+    <string name="app_name">Anamorpheus</string>
     <string name="load_video_button">Load a video from gallery</string>
     <string name="record_video_button">Record a video</string>
     <string name="title_activity_type">TypeActivity</string>
     <string name="title_activity_record_video">RecordVideoActivity</string>
     <string name="title_activity_preview_video">PreviewVideoActivity</string>
+    <string name="title_activity_final_render">FinalRenderActivity</string>
 </resources>

@@ -30,6 +30,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dapm.g1.final_project.PathUtil;
 import dapm.g1.final_project.R;
+import dapm.g1.final_project.VideoUtils;
 import wseemann.media.FFmpegMediaMetadataRetriever;
 
 public class TypeActivity extends AppCompatActivity {
@@ -42,14 +43,14 @@ public class TypeActivity extends AppCompatActivity {
 
     static final int REQUEST_VIDEO_CAPTURE = 1;
 
-    private String duration;
-    private LinearLayout llay;
-    private ProgressDialog effectProgressDialog;
-    private FFmpegMediaMetadataRetriever mediaMetadataRetriever;
-    private double intervalRefresh;
-    private List<Bitmap> listFrames = new ArrayList<>();
-    private ProgressDialog mProgressDialog;
-    private String fileManager;
+    public String duration;
+    protected LinearLayout llay;
+    protected ProgressDialog effectProgressDialog;
+    public FFmpegMediaMetadataRetriever mediaMetadataRetriever;
+    public double intervalRefresh;
+    protected List<Bitmap> listFrames = new ArrayList<>();
+    protected ProgressDialog mProgressDialog;
+    public String fileManager;
 
 
     @Override
@@ -57,71 +58,88 @@ public class TypeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_type);
 
+        // Binding view
         ButterKnife.bind(this);
 
-        Uri uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
+        // Setting up the view
+        mProgressDialog = new ProgressDialog(getApplicationContext());
 
-        System.out.println("uri video : " + uriData);
+        // Starting async task (another thread)
+        new FramesExtraction().execute();
 
-        fileManager = PathUtil.getPath(this, uriData);
-
-        System.out.println(fileManager);
-        //Log.e("path", pathSelectedVideo);
-        Toast.makeText(this, fileManager, Toast.LENGTH_SHORT).show();
-        if (fileManager != null) {
-            //TODO
-            mediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
-            mediaMetadataRetriever.setDataSource(fileManager);
-
-            duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
-            Log.e("duration", duration);
-
-            // Create a Linear Layout for each contact?
-            llay = new LinearLayout(this);
-            llay.setOrientation(LinearLayout.HORIZONTAL);
-
-            int numberFrames = getFrameRateVideo(fileManager);
-            System.out.println("The video has a " + numberFrames + " frames / second");
-
-            intervalRefresh = 1000000/numberFrames;
-
-            new FramesExtraction().execute();
-
-
-        }
     }
 
+    /**
+     * Method called when user clicks the generate button
+     */
     @OnClick(R.id.generateAnamorphosis)
     void generateAnamorphosis(){
         new FramesExtraction().execute();
     }
 
+    /**
+     * Inner class (Asynchronous task) to get all the frames from a video //TODO MICKAEL ALGO IMP ?
+     */
     private class FramesExtraction extends AsyncTask<String, Void, String> {
 
         @Override
         protected String doInBackground(String... params) {
 
-            int currentTime = 0;
-            duration = String.valueOf(Integer.valueOf(duration) * 1000);
-            System.out.println("duration : " + duration);
-            System.out.println("duration integer " + Integer.valueOf(duration));
-            System.out.println("Interval refresh " + intervalRefresh);
-            while(currentTime < Integer.valueOf(duration)){
-                final int finalCurrentTime = currentTime;
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
+            Uri uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
 
-                        if(mediaMetadataRetriever.getFrameAtTime(finalCurrentTime) != null){
-                            Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(finalCurrentTime); //unit in microsecond
-                            listFrames.add(bmFrame);
-                        }
-                    }
-                }).start();
-                currentTime = finalCurrentTime;
-                currentTime += intervalRefresh;
-                System.out.println(currentTime);
+            fileManager = PathUtil.getPath(getApplicationContext(), uriData);
+
+            System.out.println(fileManager);
+            //Log.e("path", pathSelectedVideo);
+            if (fileManager != null) {
+                //TODO
+                mediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
+                mediaMetadataRetriever.setDataSource(fileManager);
+
+                duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
+                Log.e("duration", duration);
+
+                // Create a Linear Layout for each contact?
+                llay = new LinearLayout(getApplicationContext());
+                llay.setOrientation(LinearLayout.HORIZONTAL);
+
+                int numberFrames = VideoUtils.getFrameRateVideo(fileManager);
+                System.out.println("The video has a " + numberFrames + " frames / second");
+
+                intervalRefresh = 1000000/numberFrames;
+
+
+                mProgressDialog.setTitle("test");
+                mProgressDialog.setMessage("test");
+                mProgressDialog.setIndeterminate(false);
+                mProgressDialog.show();
             }
+
+            int currentTime = 0;
+            System.out.println("duration " + duration);
+
+            if(duration != null){
+                duration = String.valueOf(Integer.valueOf(duration) * 1000);
+                System.out.println("duration : " + duration);
+                System.out.println("duration integer " + Integer.valueOf(duration));
+                System.out.println("Interval refresh " + intervalRefresh);
+                while(currentTime < Integer.valueOf(duration)){
+                    final int finalCurrentTime = currentTime;
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if(mediaMetadataRetriever.getFrameAtTime(finalCurrentTime) != null){
+                                Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(finalCurrentTime); //unit in microsecond
+                                listFrames.add(bmFrame);
+                            }
+                        }
+                    }).start();
+                    currentTime = finalCurrentTime;
+                    currentTime += intervalRefresh;
+                    System.out.println(currentTime);
+                }
+            }
+
             return "Executed";
         }
 
@@ -141,43 +159,12 @@ public class TypeActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute() {
-            mProgressDialog = new ProgressDialog(TypeActivity.this);
-            mProgressDialog.setTitle("test");
-            mProgressDialog.setMessage("test");
-            mProgressDialog.setIndeterminate(false);
-            mProgressDialog.show();
+
         }
 
         @Override
         protected void onProgressUpdate(Void... values) {}
     }
-
-    public int getFrameRateVideo(String path){
-        MediaExtractor extractor = new MediaExtractor();
-        int frameRate = 24; //may be default
-        try {
-            //Adjust data source as per the requirement if file, URI, etc.
-            extractor.setDataSource(path);
-            int numTracks = extractor.getTrackCount();
-            System.out.println("Number of frames in video : " + numTracks);
-            for (int i = 0; i < numTracks; ++i) {
-                MediaFormat format = extractor.getTrackFormat(i);
-                String mime = format.getString(MediaFormat.KEY_MIME);
-                if (mime.startsWith("video/")) {
-                    if (format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
-                        frameRate = format.getInteger(MediaFormat.KEY_FRAME_RATE);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            //Release stuff
-            extractor.release();
-        }
-        return frameRate;
-    }
-
 
 
 }

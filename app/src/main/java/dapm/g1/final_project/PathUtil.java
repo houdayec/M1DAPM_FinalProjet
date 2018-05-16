@@ -3,6 +3,9 @@ package dapm.g1.final_project;
 /**
  * Created by Corentin on 4/25/2018.
  */
+/**
+ * Class used to get real path of media file
+ */
 
 import android.content.ContentUris;
 import android.content.Context;
