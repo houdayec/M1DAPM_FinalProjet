@@ -112,7 +112,7 @@ public class TypeActivity extends AppCompatActivity {
                 mProgressDialog.setTitle("test");
                 mProgressDialog.setMessage("test");
                 mProgressDialog.setIndeterminate(false);
-                mProgressDialog.show();
+                //mProgressDialog.show();
             }
 
             int currentTime = 0;
