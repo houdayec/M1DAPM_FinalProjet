@@ -43,14 +43,17 @@ public class TypeActivity extends AppCompatActivity {
 
     static final int REQUEST_VIDEO_CAPTURE = 1;
 
-    public String duration;
+    private String duration;
+    private int sample=1;
     protected LinearLayout llay;
     protected ProgressDialog effectProgressDialog;
     public FFmpegMediaMetadataRetriever mediaMetadataRetriever;
     public double intervalRefresh;
-    protected List<Bitmap> listFrames = new ArrayList<>();
+   // protected List<Bitmap> listFrames = new ArrayList<>();
+    protected  Bitmap finalBmp;
     protected ProgressDialog mProgressDialog;
     public String fileManager;
+
 
 
     @Override
@@ -67,6 +70,20 @@ public class TypeActivity extends AppCompatActivity {
         // Starting async task (another thread)
         new FramesExtraction().execute();
 
+    }
+
+    public void createAnamorphose(Bitmap currentBmp,int[] pixels,int index){
+        Log.e("coucouc","coucocucou");
+        int height=currentBmp.getHeight();
+        int width=currentBmp.getWidth();
+        int currentPixel[]=new int[height*width];
+        currentBmp.getPixels(currentPixel, 0, width, 0, 0, width, height);
+        if(index<height) {//if choose TOP
+            for (int j = 0; j < sample * width; j++) {
+                if(index*width+j<width*height)
+                    pixels[index * width + j] = currentPixel[index * width + j];
+            }
+        }
     }
 
     /**
@@ -86,9 +103,10 @@ public class TypeActivity extends AppCompatActivity {
         protected String doInBackground(String... params) {
 
             Uri uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
-
             fileManager = PathUtil.getPath(getApplicationContext(), uriData);
 
+            int height = 0;
+            int width = 0;
             System.out.println(fileManager);
             //Log.e("path", pathSelectedVideo);
             if (fileManager != null) {
@@ -109,6 +127,14 @@ public class TypeActivity extends AppCompatActivity {
                 intervalRefresh = 1000000/numberFrames;
 
 
+                Bitmap bmFirst = mediaMetadataRetriever.getFrameAtTime(0,FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
+                height=bmFirst.getHeight();
+                width=bmFirst.getWidth();
+
+                int size=height;
+                sample = size/(Integer.valueOf(duration)*numberFrames);
+
+
                 mProgressDialog.setTitle("test");
                 mProgressDialog.setMessage("test");
                 mProgressDialog.setIndeterminate(false);
@@ -118,6 +144,10 @@ public class TypeActivity extends AppCompatActivity {
             int currentTime = 0;
             System.out.println("duration " + duration);
 
+            final int[] pixelsFinal=new int[width*height];
+            int index=0;
+
+
             if(duration != null){
                 duration = String.valueOf(Integer.valueOf(duration) * 1000);
                 System.out.println("duration : " + duration);
@@ -125,35 +155,50 @@ public class TypeActivity extends AppCompatActivity {
                 System.out.println("Interval refresh " + intervalRefresh);
                 while(currentTime < Integer.valueOf(duration)){
                     final int finalCurrentTime = currentTime;
+                    final  int finalIndex = index;
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
                             if(mediaMetadataRetriever.getFrameAtTime(finalCurrentTime) != null){
-                                Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(finalCurrentTime); //unit in microsecond
-                                listFrames.add(bmFrame);
+                                Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(finalCurrentTime,FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
+                                if(bmFrame!=null)
+                                {
+                                    createAnamorphose(bmFrame,pixelsFinal,finalIndex);
+                                    //index+=sample;
+                                   // int [] valeur={bmFrame.getWidth(),bmFrame.getHeight()};
+                                   // publishProgress(pixelsFinal,valeur);
+                                }
                             }
                         }
                     }).start();
+                    index += sample;
                     currentTime = finalCurrentTime;
                     currentTime += intervalRefresh;
                     System.out.println(currentTime);
                 }
+
+                finalBmp=Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                finalBmp.setPixels(pixelsFinal, 0, width, 0, 0, width, height);
+
+                //listFrames.add(finalBmp);
+
             }
+
+
 
             return "Executed";
         }
 
         @Override
         protected void onPostExecute(String result) {
-            System.out.println(listFrames.size() + " results");
-            for (Bitmap bm : listFrames) {
-                System.out.println("Image found");
-                ImageView imgView = new ImageView(TypeActivity.this);
-                imgView.setImageBitmap(bm);
-                llay.addView(imgView);
-            }
-            mProgressDialog.dismiss();
-            //scrollView.addView(llay);
+
+            //mProgressDialog.dismiss();
+
+           /* ImageView imgView=findViewById(R.id.imageView);
+            imgView.setImageBitmap(finalBmp);*/
+
+            Log.e("fin","fin");
+            Toast.makeText(TypeActivity.this, "Traitement fini", Toast.LENGTH_SHORT).show();
 
         }
 
@@ -163,7 +208,16 @@ public class TypeActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onProgressUpdate(Void... values) {}
+        protected void onProgressUpdate(Void... values) {
+           /* int[] pixelStart=values[0];
+            int[] valeur=values[1];
+            int w=valeur[0];
+            int h=valeur[1];
+            Bitmap finalBmp=Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            finalBmp.setPixels(pixelStart, 0, w, 0, 0,w, h);
+            ImageView imgView=findViewById(R.id.imageView);
+            imgView.setImageBitmap(finalBmp);*/
+        }
     }
 
 

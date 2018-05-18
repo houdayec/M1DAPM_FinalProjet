@@ -8,6 +8,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -48,6 +49,7 @@ public class PreviewVideoActivity extends AppCompatActivity {
         // Setting up the VideoView
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
         mVideoView.setVideoURI(uriData);
+        Log.e("preview",uriData.toString());
 
         mVideoView.start();
     }
@@ -79,6 +81,7 @@ public class PreviewVideoActivity extends AppCompatActivity {
     void validVideo(){
         Intent intentType = new Intent(this, TypeActivity.class);
         Bundle bundleArgs = new Bundle();
+        Log.e("validVideopreview",uriData.toString());
         bundleArgs.putString("uri_video", uriData.toString());
         Toast.makeText(this, "uri : " + uriData.toString(), Toast.LENGTH_LONG).show();
         intentType.putExtras(bundleArgs);

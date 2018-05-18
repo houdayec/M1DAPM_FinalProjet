@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
-            Intent intentPreview = new Intent(this, FinalRenderActivity.class);
+            Intent intentPreview = new Intent(this, PreviewVideoActivity.class);
             Bundle bundleArgs = new Bundle();
             Uri videoUri = intent.getData();
             bundleArgs.putString("uri_video", videoUri.toString());
@@ -127,6 +127,9 @@ public class MainActivity extends AppCompatActivity {
 
             fileManager = PathUtil.getPath(this, intent.getData());
             System.out.println(fileManager);
+            Log.e("main",intent.getData().toString());
+            Log.e("main2",fileManager);
+
             //Log.e("path", pathSelectedVideo);
             Toast.makeText(this, fileManager, Toast.LENGTH_SHORT).show();
             if (fileManager != null) {
@@ -150,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Intent intentPreview = new Intent(this, PreviewVideoActivity.class);
                 Bundle bundleArgs = new Bundle();
-                bundleArgs.putString("uri_video", fileManager);
+                bundleArgs.putString("uri_video", intent.getData().toString());
                 intentPreview.putExtras(bundleArgs);
                 startActivity(intentPreview);
 
