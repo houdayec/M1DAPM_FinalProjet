@@ -27,13 +27,13 @@ public class PreviewVideoActivity extends AppCompatActivity {
     VideoView mVideoView;
 
     @BindView(R.id.cancelVideo)
-    FloatingActionButton mCancelVideoButton;
+    ImageButton mCancelVideoButton;
 
     @BindView(R.id.validVideo)
-    FloatingActionButton mValidVideo;
+    ImageButton mValidVideo;
 
     @BindView(R.id.controlVideoButton)
-    FloatingActionButton mControlVideoButton;
+    ImageButton mControlVideoButton;
 
     private Uri uriData;
 

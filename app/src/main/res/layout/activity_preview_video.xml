@@ -18,7 +18,7 @@
             android:layout_gravity="center|bottom"
             android:gravity="center">
 
-            <android.support.design.widget.FloatingActionButton
+            <ImageButton
                 android:id="@+id/cancelVideo"
                 android:layout_width="64dp"
                 android:layout_height="64dp"
@@ -26,14 +26,14 @@
                 android:backgroundTint="@color/white"
                 android:src="@drawable/ic_backspace_black_18dp"/>
 
-            <android.support.design.widget.FloatingActionButton
+            <ImageButton
                 android:id="@+id/controlVideoButton"
                 android:layout_width="64dp"
                 android:layout_height="64dp"
                 android:src="@drawable/ic_play_pause_black_18dp"
                 android:backgroundTint="@color/white"/>
 
-            <android.support.design.widget.FloatingActionButton
+            <ImageButton
                 android:id="@+id/validVideo"
                 android:layout_width="64dp"
                 android:layout_height="64dp"

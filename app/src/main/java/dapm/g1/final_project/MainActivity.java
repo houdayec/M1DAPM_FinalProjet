@@ -25,6 +25,7 @@ import java.io.IOException;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import dapm.g1.final_project.activities.FinalRenderActivity;
 import dapm.g1.final_project.activities.PreviewVideoActivity;
 import dapm.g1.final_project.activities.RecordVideoActivity;
 import dapm.g1.final_project.activities.TypeActivity;
@@ -114,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
-            Intent intentPreview = new Intent(this, PreviewVideoActivity.class);
+            Intent intentPreview = new Intent(this, FinalRenderActivity.class);
             Bundle bundleArgs = new Bundle();
             Uri videoUri = intent.getData();
             bundleArgs.putString("uri_video", videoUri.toString());
