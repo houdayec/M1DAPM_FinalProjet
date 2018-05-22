@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+        <VideoView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/videoView"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="center|bottom"
+            android:gravity="center">
+
+            <ImageButton
+                android:id="@+id/cancelVideo"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_marginRight="80dp"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/ic_backspace_black_18dp"/>
+
+            <ImageButton
+                android:id="@+id/controlVideoButton"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_play_pause_black_18dp"
+                android:backgroundTint="@color/white"/>
+
+            <ImageButton
+                android:id="@+id/validVideo"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_marginLeft="80dp"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/ic_check_circle_black_18dp"/>
+
+        </LinearLayout>
+
+</FrameLayout>
