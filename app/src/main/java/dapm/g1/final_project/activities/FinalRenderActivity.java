@@ -50,12 +50,12 @@ public class FinalRenderActivity extends AppCompatActivity {
     protected ProgressDialog effectProgressDialog;
     public FFmpegMediaMetadataRetriever mediaMetadataRetriever;
     public double intervalRefresh;
-    // protected List<Bitmap> listFrames = new ArrayList<>();
     protected  Bitmap finalBmp;
     protected ProgressDialog mProgressDialog;
     public String fileManager;
     private int sample = 1;
     private Uri uriData;
+    private String direction;
 
 
     @SuppressLint("NewApi")
@@ -70,6 +70,8 @@ public class FinalRenderActivity extends AppCompatActivity {
 
 
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
+        direction = getIntent().getStringExtra("direction");
+        Log.e("direction",direction);
         fileManager = PathUtil.getPath(this, uriData);
 
         mediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
@@ -81,7 +83,11 @@ public class FinalRenderActivity extends AppCompatActivity {
         // TODO DIRECTION
 
         Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(0,FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
-        int stackPixels = bmFrame.getHeight();
+        int stackPixels=1;
+        if(direction.equals("Top") || direction.equals("Bottom"))
+            stackPixels = bmFrame.getHeight();
+        else if(direction.equals("Left") || direction.equals("Right"))
+            stackPixels = bmFrame.getWidth();
         duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
 
         System.out.println("current duration : " + (Integer.parseInt(duration)));
@@ -153,7 +159,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                 currentTime += intervalRefresh;
                 System.out.println("currentTime : " + currentTime);
             }
-            if(bmpStart !=null) {
+            if(bmpStart != null) {
                 finalBmp.setPixels(pixelsArrayTemp, 0, bmpStart.getWidth(), 0, 0, bmpStart.getWidth(), bmpStart.getHeight());
             }
             return "Executed";}
@@ -202,14 +208,54 @@ public class FinalRenderActivity extends AppCompatActivity {
         int width=currentBmp.getWidth();
         int currentPixel[]=new int[height*width];
         currentBmp.getPixels(currentPixel, 0, width, 0, 0, width, height);
-        /*System.out.println(pixels.toString());
-        System.out.println(pixels.length);*/
-        if(index<height) {//if choose TOP
-            for (int j = 0; j < sample * width; j++) {
-                if(index*width+j<width*height)
-                    pixels[index * width + j] = currentPixel[index * width + j];
-            }
+        switch (direction)
+        {
+            case "Top" :
+                if(index<height) {
+                    for (int j = 0; j < sample * width; j++) {
+                        if((index*width)+j < width*height)
+                            pixels[index * width + j] = currentPixel[index * width + j];
+                    }
+                }
+                break;
+            case "Bottom" :
+                if(index<height) {
+                    int indexTmp = (height-1) - index;
+                    for (int j = (height-1); j >(height-1)-(sample * width); j--) {
+                        if((indexTmp*width)+j < width*height){
+                            pixels[indexTmp * width + j] = currentPixel[indexTmp * width + j];
+                        }
+                    }
+                }
+                break;
+            case "Left" :
+                if(index<width) {
+                    for (int k = 0; k < sample; k++) {
+                        for (int i = 0; i < height; i++) {
+                            if ((i*width)+index+k < width * height)
+                                pixels[i * width + (index+k)] = currentPixel[i * width + (index+k)];
+                        }
+                    }
+                }
+                break;
+
+            case "Right" :
+                if(index<width) {
+                    int indexTmp = (width-1) - index;
+                    for (int k = 0; k < sample; k++) {
+                        for (int i = 0; i < height; i++) {
+                            if ((i*width)+indexTmp-k > 0)
+                                pixels[i * width + (indexTmp-k)] = currentPixel[i * width + (indexTmp-k)];
+                        }
+                    }
+                }
+                break;
+            default:
+                System.out.println("Error on the direction");
+                Log.e("error","errror");
+                break;
         }
+
     }
 
 

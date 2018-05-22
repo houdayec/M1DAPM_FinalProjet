@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -40,6 +41,9 @@ public class TypeActivity extends AppCompatActivity {
      */
     @BindView(R.id.generateAnamorphosis)
     ImageButton mGenerateAnamorphosisButton;
+
+    @BindView((R.id.spinner))
+    Spinner mSpinnerDirection;
 
     static final int REQUEST_VIDEO_CAPTURE = 1;
 
@@ -67,6 +71,7 @@ public class TypeActivity extends AppCompatActivity {
         Intent intentFinalRender = new Intent(this, FinalRenderActivity.class);
         Bundle bundleArgs = new Bundle();
         bundleArgs.putString("uri_video", uriData.toString());
+        bundleArgs.putString("direction",mSpinnerDirection.getSelectedItem().toString());
         intentFinalRender.putExtras(bundleArgs);
         startActivity(intentFinalRender);
     }
