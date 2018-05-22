@@ -57,7 +57,6 @@ public class FinalRenderActivity extends AppCompatActivity {
     private int sample = 1;
     private Uri uriData;
 
-    int scale=1;
 
     @SuppressLint("NewApi")
     @Override
@@ -75,6 +74,24 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         mediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
         mediaMetadataRetriever.setDataSource(fileManager);
+
+        int numberFrames = VideoUtils.getFrameRateVideo(fileManager);
+        System.out.println("The video has a " + numberFrames + " frames / second");
+
+        // TODO DIRECTION
+
+        Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(0,FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
+        int stackPixels = bmFrame.getHeight();
+        duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
+
+        System.out.println("current duration : " + (Integer.parseInt(duration)));
+
+        sample = stackPixels/((Integer.parseInt(duration)/1000)*numberFrames);
+        System.out.println("start scale "+ sample);
+        intervalRefresh = 1000000/numberFrames;
+
+        duration = String.valueOf(Integer.valueOf(duration) * 1000);
+
 
         // Starting anamorphosis
         new FramesExtraction().execute();
@@ -107,43 +124,37 @@ public class FinalRenderActivity extends AppCompatActivity {
     @SuppressLint("NewApi")
     private class FramesExtraction extends AsyncTask<String, int[], String> {
 
-        int [] pixelStart=null;
-        Bitmap bmpStart=null;
-
         @Override
-        protected String doInBackground(String... params) {int currentTime = 0;
+        protected String doInBackground(String... params) {
+
+            int currentTime = 0;
             Bitmap bmpStart=null;
-            int [] pixelStart=null;
+            int [] pixelsArrayTemp=null;
             int indice=0;
-            duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
-            duration = String.valueOf(Integer.valueOf(duration) * 1000);
+
+            System.out.println("Current file duration : " + duration);
+
             while(currentTime < Integer.valueOf(duration)){
                 Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(currentTime,FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
                 if(currentTime==0)
                 {
                     bmpStart=bmFrame;
-                    pixelStart=new int[bmpStart.getWidth()*bmpStart.getHeight()];
-                    //bmpStart.getPixels(pixelStart, 0, bmpStart.getWidth(), 0, 0,bmpStart.getWidth(),bmpStart.getHeight());
-
+                    pixelsArrayTemp=new int[bmpStart.getWidth()*bmpStart.getHeight()];
+                    finalBmp=Bitmap.createBitmap(bmpStart.getWidth(), bmpStart.getHeight(), Bitmap.Config.ARGB_8888);
                 }
                 if(bmFrame!=null)
                 {
-                    //testMaxime(pixelStart,bmFrame,indice);
-                    indice+=scale;
+                    createAnamorphosis(bmFrame,pixelsArrayTemp,indice);
+                    System.out.println("scale : " + sample);
+                    indice+=sample;
                     int [] valeur={bmFrame.getWidth(),bmFrame.getHeight()};
-                    publishProgress(pixelStart,valeur);
+                    publishProgress(pixelsArrayTemp,valeur);
                 }
-                //listFrames.add(bmFrame);
-                System.out.println("coucou");
-                Log.e("yo","yo");
                 currentTime += intervalRefresh;
-                System.out.println(currentTime);
+                System.out.println("currentTime : " + currentTime);
             }
             if(bmpStart !=null) {
-                Bitmap finalBmp=Bitmap.createBitmap(bmpStart.getWidth(), bmpStart.getHeight(), Bitmap.Config.ARGB_8888);
-                finalBmp.setPixels(pixelStart, 0, bmpStart.getWidth(), 0, 0, bmpStart.getWidth(), bmpStart.getHeight());
-
-                //listFrames.add(finalBmp);
+                finalBmp.setPixels(pixelsArrayTemp, 0, bmpStart.getWidth(), 0, 0, bmpStart.getWidth(), bmpStart.getHeight());
             }
             return "Executed";}
 
@@ -154,10 +165,10 @@ public class FinalRenderActivity extends AppCompatActivity {
 
             //mProgressDialog.dismiss();
 
-           /* ImageView imgView=findViewById(R.id.imageView);
-            imgView.setImageBitmap(finalBmp);*/
+            mImageViewAnamorphosis.setImageBitmap(finalBmp);
 
-            Log.e("fin","fin");
+            Log.e("onPostExecute","reached");
+
             Toast.makeText(FinalRenderActivity.this, "Traitement fini", Toast.LENGTH_SHORT).show();
 
         }
@@ -169,15 +180,36 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(int[]... values) {
-            int[] pixelStart=values[0];
+            int[] pixelsArray=values[0];
             int[] valeur=values[1];
             int w=valeur[0];
             int h=valeur[1];
-            Bitmap finalBmp=Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            finalBmp.setPixels(pixelStart, 0, w, 0, 0,w, h);
+            //Bitmap finalBmp=Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            finalBmp.setPixels(pixelsArray, 0, w, 0, 0,w, h);
             mImageViewAnamorphosis.setImageBitmap(finalBmp);
         }
 
+    }
+
+    /**
+     * Method to create an anamorphosis
+     * @param currentBmp
+     * @param pixels
+     * @param index
+     */
+    public void createAnamorphosis(Bitmap currentBmp,int[] pixels,int index){
+        int height=currentBmp.getHeight();
+        int width=currentBmp.getWidth();
+        int currentPixel[]=new int[height*width];
+        currentBmp.getPixels(currentPixel, 0, width, 0, 0, width, height);
+        /*System.out.println(pixels.toString());
+        System.out.println(pixels.length);*/
+        if(index<height) {//if choose TOP
+            for (int j = 0; j < sample * width; j++) {
+                if(index*width+j<width*height)
+                    pixels[index * width + j] = currentPixel[index * width + j];
+            }
+        }
     }
 
 
