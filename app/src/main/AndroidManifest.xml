@@ -56,6 +56,14 @@
         <activity
             android:name=".activities.FinalRenderActivity"
             android:label="@string/title_activity_final_render"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".activities.Test_Algo_MT"
+            android:label="@string/title_activity_test__algo__mt"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".activities.Test_FingerPaint"
+            android:label="@string/title_activity_test__finger_paint"
             android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 

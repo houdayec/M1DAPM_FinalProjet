@@ -64,7 +64,7 @@ public class TypeActivity extends AppCompatActivity {
      */
     @OnClick(R.id.generateAnamorphosis)
     void generateAnamorphosis(){
-        Intent intentFinalRender = new Intent(this, FinalRenderActivity.class);
+        Intent intentFinalRender = new Intent(this, Test_FingerPaint.class);
         Bundle bundleArgs = new Bundle();
         bundleArgs.putString("uri_video", uriData.toString());
         intentFinalRender.putExtras(bundleArgs);
