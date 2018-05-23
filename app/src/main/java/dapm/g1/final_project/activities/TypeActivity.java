@@ -1,5 +1,6 @@
 package dapm.g1.final_project.activities;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -26,6 +27,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -52,6 +54,9 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
     @BindView(R.id.validVideoFP)
     ImageButton cancelVideo;
 
+    @BindView((R.id.spinner))
+    Spinner mSpinnerDirection;
+
     @BindView(R.id.cancelVideoFP)
     ImageButton validVideo;
 
@@ -75,6 +80,7 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
     private DrawingView dv;
     private LinearLayout layoutDrawingView;
 
+    @SuppressLint("NewApi")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,6 +118,7 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         Intent intentFinalRender = new Intent(this, FinalRenderActivity.class);
         Bundle bundleArgs = new Bundle();
         bundleArgs.putString("uri_video", uriData.toString());
+        bundleArgs.putString("direction",mSpinnerDirection.getSelectedItem().toString());
         intentFinalRender.putExtras(bundleArgs);
         startActivity(intentFinalRender);
     }
