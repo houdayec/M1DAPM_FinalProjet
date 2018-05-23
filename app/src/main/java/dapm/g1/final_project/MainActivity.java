@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     static final int REQUEST_VIDEO_CAPTURE = 1;
     static final int REQUEST_READ_EXTERNAL_STORAGE = 100;
     static final int REQUEST_TAKE_GALLERY_VIDEO = 200;
+    static final int REQUEST_WRITE_EXTERNAL_STORAGE = 201;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,6 +186,12 @@ public class MainActivity extends AppCompatActivity {
                 if ( ContextCompat.checkSelfPermission( this, Manifest.permission.READ_EXTERNAL_STORAGE ) != PackageManager.PERMISSION_GRANTED ) {
                     ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_EXTERNAL_STORAGE);
                 }
+                break;
+            case REQUEST_READ_EXTERNAL_STORAGE:
+                if ( ContextCompat.checkSelfPermission( this, Manifest.permission.WRITE_EXTERNAL_STORAGE ) != PackageManager.PERMISSION_GRANTED ) {
+                    ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_WRITE_EXTERNAL_STORAGE);
+                }
+                break;
         }
     }
 
