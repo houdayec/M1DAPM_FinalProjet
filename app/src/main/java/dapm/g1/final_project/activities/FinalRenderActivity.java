@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -18,6 +20,8 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+
+import java.io.IOException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -57,6 +61,20 @@ public class FinalRenderActivity extends AppCompatActivity {
     private Uri uriData;
     private String direction;
 
+    private static int exifToDegrees(int exifOrientation) {
+        if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) {
+            return 90;
+        }
+        else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180)
+        {
+            return 180;
+        }
+        else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270)
+        {
+            return 270;
+        }
+        return 0;
+    }
 
     @SuppressLint("NewApi")
     @Override
@@ -70,6 +88,7 @@ public class FinalRenderActivity extends AppCompatActivity {
 
 
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
+
         direction = getIntent().getStringExtra("direction");
         Log.e("direction",direction);
         fileManager = PathUtil.getPath(this, uriData);
@@ -93,6 +112,8 @@ public class FinalRenderActivity extends AppCompatActivity {
         System.out.println("current duration : " + (Integer.parseInt(duration)));
 
         sample = stackPixels/((Integer.parseInt(duration)/1000)*numberFrames);
+        if(sample == 0)
+            sample = 1;
         System.out.println("start scale "+ sample);
         intervalRefresh = 1000000/numberFrames;
 
@@ -158,10 +179,10 @@ public class FinalRenderActivity extends AppCompatActivity {
                 }
                 currentTime += intervalRefresh;
                 System.out.println("currentTime : " + currentTime);
-            }
-            if(bmpStart != null) {
-                finalBmp.setPixels(pixelsArrayTemp, 0, bmpStart.getWidth(), 0, 0, bmpStart.getWidth(), bmpStart.getHeight());
-            }
+         }
+         if(bmpStart != null) {
+             finalBmp.setPixels(pixelsArrayTemp, 0, bmpStart.getWidth(), 0, 0, bmpStart.getWidth(), bmpStart.getHeight());
+         }
             return "Executed";}
 
 
