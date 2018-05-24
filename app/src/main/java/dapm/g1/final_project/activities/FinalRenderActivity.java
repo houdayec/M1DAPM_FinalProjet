@@ -9,6 +9,8 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -19,9 +21,13 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Random;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -104,24 +110,53 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         duration = String.valueOf(Integer.valueOf(duration) * 1000);
 
-
         // Starting anamorphosis
         new FramesExtraction().execute();
 
     }
 
     /**
+     * Allows the user to save a completed anamorphosis
      * Butterknife OnClick methods
      */
 
     @OnClick(R.id.downloadAnamorphosisButton)
     void downloadAnamorphosis(){
-        //TODO
+        String storage = Environment.getExternalStorageDirectory().toString();
+        File fileRepo = new File(storage + "/saved_anamorphosis");
+        fileRepo.mkdirs();
+
+        // Genere un entier aleatoire pour la sauvegarde
+        Random fileId = new Random();
+        int n = 1;
+        n = fileId.nextInt();
+
+        String fileName = "Anamorphosis-" + n + ".jpg";
+        File newImg = new File(fileRepo, fileName);
+
+        try{
+            FileOutputStream fout = new FileOutputStream(newImg);
+            finalBmp.compress(Bitmap.CompressFormat.JPEG, 90, fout);
+            fout.flush();
+            fout.close();
+        }
+        catch (Exception e){
+            Log.e("Saving", "Saving anamophosis failed");
+        }
+        Toast.makeText(FinalRenderActivity.this, "File saved:" + newImg.getAbsolutePath(), Toast.LENGTH_LONG).show();
     }
 
     @OnClick(R.id.shareAnamorphosisButton)
     void shareAnamorphosis(){
-        //TODO
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("image/jpg");
+
+        String bitmapPath = MediaStore.Images.Media.insertImage(getContentResolver(), finalBmp, "sharedAnamorphosis", null);
+        Uri bitmapUri = Uri.parse(bitmapPath);
+
+        // Will show every communication app that can share the picture
+        intent.putExtra(Intent.EXTRA_STREAM, bitmapUri);
+        startActivity(Intent.createChooser(intent, "Share !"));
     }
 
     @OnClick(R.id.backToMenuButton)

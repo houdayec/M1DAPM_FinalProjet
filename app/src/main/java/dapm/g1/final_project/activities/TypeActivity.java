@@ -92,7 +92,7 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
 
         dv = new DrawingView(this);
-        dv.setBackgroundColor(getColor(R.color.white));
+        dv.setBackgroundColor(getResources().getColor(R.color.white));
 
         layoutDrawingView = findViewById(R.id.layoutDrawingView);
         layoutDrawingView.addView(dv);
