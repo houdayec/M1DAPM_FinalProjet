@@ -663,11 +663,26 @@ public class Test_Multi_Thread extends AppCompatActivity {
                     mPixelBuf);
             mPixelBuf.rewind();
 
-            bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-            bmp.copyPixelsFromBuffer(mPixelBuf);
-            createAnamorphosis(bmp,finalPixels,indexRangePixels);
-            bmp.recycle();
-            indexRangePixels += sample;
+            Thread thread = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        while(true) {
+                            bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+                            bmp.copyPixelsFromBuffer(mPixelBuf);
+                            createAnamorphosis(bmp,finalPixels,indexRangePixels);
+                            bmp.recycle();
+                            indexRangePixels += sample;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+
+            thread.start();
+
+
             System.out.println("frame " + index++);
 
         }

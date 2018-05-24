@@ -25,6 +25,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import dapm.g1.final_project.MainActivity;
 import dapm.g1.final_project.R;
 
 public class TypeActivity extends AppCompatActivity implements View.OnClickListener {
@@ -222,6 +223,9 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-
-
+    @Override
+    public void onBackPressed() {
+        Intent intentMainActivity = new Intent(this, MainActivity.class);
+        startActivity(intentMainActivity);
+    }
 }

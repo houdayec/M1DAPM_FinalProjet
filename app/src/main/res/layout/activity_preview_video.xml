@@ -24,13 +24,13 @@
                 android:layout_height="64dp"
                 android:layout_marginRight="80dp"
                 android:backgroundTint="@color/white"
-                android:src="@drawable/ic_backspace_black_18dp"/>
+                android:src="@drawable/ic_backspace_black_36dp"/>
 
             <ImageButton
                 android:id="@+id/controlVideoButton"
                 android:layout_width="64dp"
                 android:layout_height="64dp"
-                android:src="@drawable/ic_play_pause_black_18dp"
+                android:src="@drawable/ic_play_pause_black_36dp"
                 android:backgroundTint="@color/white"/>
 
             <ImageButton
@@ -39,7 +39,7 @@
                 android:layout_height="64dp"
                 android:layout_marginLeft="80dp"
                 android:backgroundTint="@color/white"
-                android:src="@drawable/ic_check_circle_black_18dp"/>
+                android:src="@drawable/ic_check_circle_black_36dp"/>
 
         </LinearLayout>
 
