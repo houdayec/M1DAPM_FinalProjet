@@ -24,6 +24,10 @@ import dapm.g1.final_project.R;
 
 public class PreviewVideoActivity extends AppCompatActivity {
 
+    /**
+     * Binding view
+     */
+
     @BindView(R.id.videoView)
     VideoView mVideoView;
 

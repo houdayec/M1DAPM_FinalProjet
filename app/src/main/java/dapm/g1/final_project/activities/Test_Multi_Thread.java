@@ -84,7 +84,11 @@ public class Test_Multi_Thread extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // Binding view
+
         ButterKnife.bind(this);
+
+        // Getting data from previous activity
 
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
         fileManager = PathUtil.getPath(this, uriData);
@@ -95,7 +99,7 @@ public class Test_Multi_Thread extends AppCompatActivity {
         int numberFrames = VideoUtils.getFrameRateVideo(fileManager);
         System.out.println("The video has a " + numberFrames + " frames / second");
 
-        // TODO DIRECTION
+        // Retrieving first frame in order to set up settings
 
         Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(0,FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
         int stackPixels=1;
@@ -121,11 +125,11 @@ public class Test_Multi_Thread extends AppCompatActivity {
 
         mHorizontalScrollView = findViewById(R.id.horizontalScrollView);
 
+        // Starting extraction
+
         new FramesExtraction().execute();
 
     }
-
-
 
     /**
      * Inner class (Asynchronous task) to get all the frames from a video //TODO MICKAEL ALGO IMP ?

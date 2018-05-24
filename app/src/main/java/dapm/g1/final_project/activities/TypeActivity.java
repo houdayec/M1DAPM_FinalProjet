@@ -31,7 +31,7 @@ import dapm.g1.final_project.R;
 public class TypeActivity extends AppCompatActivity implements View.OnClickListener {
 
     /**
-     * INTERN VARIABLES
+     * VIEW BINDING
      */
     @BindView(R.id.generateAnamorphosis)
     Button mGenerateAnamorphosisButton;
@@ -44,6 +44,10 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
 
     @BindView(R.id.cancelVideoFP)
     ImageButton validVideo;
+
+    /**
+     * INTERN STATE
+     */
 
     private Paint mPaint;
     private boolean didUserAlreadyDraw = false;
@@ -82,6 +86,8 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         layoutDrawingView = findViewById(R.id.layoutDrawingView);
         layoutDrawingView.addView(dv);
 
+        // Setup drawing view
+
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setDither(true);
@@ -108,6 +114,11 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         startActivity(intentFinalRender);
     }
 
+    /**
+     * Method to handle view clicks
+     * @param view
+     */
+
     @Override
     public void onClick(View view) {
         switch(view.getId()){
@@ -125,6 +136,10 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
     }
+
+    /**
+     * Custom drawing view
+     */
 
     public class DrawingView extends View {
 
@@ -164,6 +179,12 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         private float mX, mY;
         private static final float TOUCH_TOLERANCE = 4;
 
+        /**
+         * Sub custom events - user interaction with canvas
+         * @param x
+         * @param y
+         */
+
         private void touch_start(float x, float y) {
             mPath.reset();
             mPath.moveTo(x, y);
@@ -200,6 +221,12 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
             mPath.reset();
         }
 
+        /**
+         * Method to get user interaction events with the drawing canvas
+         * @param event
+         * @return
+         */
+
         @Override
         public boolean onTouchEvent(MotionEvent event) {
             float x = event.getX();
@@ -222,6 +249,10 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
             return true;
         }
     }
+
+    /**
+     * Managing when user click the back button
+     */
 
     @Override
     public void onBackPressed() {

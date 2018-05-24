@@ -49,13 +49,13 @@ public class FinalRenderActivity extends AppCompatActivity {
     @BindView(R.id.backToMenuButton)
     Button mBackToMenuButton;
 
+    /**
+     * Intern state
+     */
     private String duration;
-    protected LinearLayout llay;
-    protected ProgressDialog effectProgressDialog;
     public FFmpegMediaMetadataRetriever mediaMetadataRetriever;
     public double intervalRefresh;
     protected  Bitmap finalBmp;
-    protected ProgressDialog mProgressDialog;
     public String fileManager;
     private int sample = 1;
     private Uri uriData;
@@ -70,8 +70,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         // Binding the view
         ButterKnife.bind(this);
 
-
-
+        // Getting data from the previous activity
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
 
         direction = getIntent().getStringExtra("direction");
@@ -84,7 +83,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         int numberFrames = VideoUtils.getFrameRateVideo(fileManager);
         System.out.println("The video has a " + numberFrames + " frames / second");
 
-        // TODO DIRECTION
+        // Retrieving the first frame to set up the right settings
 
         Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(0,FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
         int stackPixels=1;
