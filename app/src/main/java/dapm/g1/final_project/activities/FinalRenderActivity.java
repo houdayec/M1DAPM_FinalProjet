@@ -181,6 +181,12 @@ public class FinalRenderActivity extends AppCompatActivity {
                             Log.e("Interpolate", String.valueOf(i));
                         }
                     }
+
+                    if(bmpEnd != null) {
+                        createAnamorphosis(bmpEnd, pixelsArrayTemp, indice);
+                        int[] valeur = {bmpEnd.getWidth(), bmpEnd.getHeight()};
+                        publishProgress(pixelsArrayTemp, valeur);
+                    }
                     indice += sample;
                     Log.e("currentTime", String.valueOf(currentTime));
                 }
