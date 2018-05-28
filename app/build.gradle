@@ -5,7 +5,11 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "dapm.g1.final_project"
+<<<<<<< HEAD
         minSdkVersion 21
+=======
+        minSdkVersion 22
+>>>>>>> f1c826b94218cb26e3aa0f4f653e026096a8f955
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"

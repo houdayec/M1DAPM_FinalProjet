@@ -76,18 +76,10 @@
                     android:gravity="center">
 
                     <ImageButton
-                        android:id="@+id/cancelVideoFP"
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:src="@drawable/ic_backspace_white_24dp"
-                        android:background="@color/colorPrimary"
-                        android:layout_margin="10dp"/>
-
-                    <ImageButton
                         android:id="@+id/validVideoFP"
                         android:layout_width="64dp"
                         android:layout_height="64dp"
-                        android:src="@drawable/ic_check_circle_white_24dp"
+                        android:src="@drawable/ic_lock_open_white_24dp"
                         android:background="@color/colorPrimary"
                         android:layout_margin="10dp"/>
 
