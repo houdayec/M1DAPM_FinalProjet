@@ -36,13 +36,10 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
     @BindView(R.id.generateAnamorphosis)
     Button mGenerateAnamorphosisButton;
 
-    @BindView(R.id.validVideoFP)
-    ImageButton cancelVideo;
-
     @BindView((R.id.spinner))
     Spinner mSpinnerDirection;
 
-    @BindView(R.id.cancelVideoFP)
+    @BindView(R.id.validVideoFP)
     ImageButton validVideo;
 
     /**
@@ -98,7 +95,7 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         mPaint.setStrokeWidth(10);
 
         validVideo.setOnClickListener(this);
-        cancelVideo.setOnClickListener(this);
+        //cancelVideo.setOnClickListener(this);
     }
 
     /**
