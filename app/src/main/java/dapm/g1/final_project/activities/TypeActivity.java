@@ -106,7 +106,7 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
      */
     @OnClick(R.id.generateAnamorphosis)
     void generateAnamorphosis(){
-        Intent intentFinalRender = new Intent(this, Test_Multi_Thread.class);
+        Intent intentFinalRender = new Intent(this, Test_recup_frame.class);
         Bundle bundleArgs = new Bundle();
         bundleArgs.putString("uri_video", uriData.toString());
         bundleArgs.putString("direction",mSpinnerDirection.getSelectedItem().toString());
@@ -123,7 +123,7 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch(view.getId()){
             case R.id.validVideoFP:
-                Intent intentFinalRender = new Intent(this, FinalRenderActivity.class);
+                Intent intentFinalRender = new Intent(this, Test_Multi_Thread.class);
                 Bundle bundleArgs = new Bundle();
                 bundleArgs.putString("uri_video", uriData.toString());
                 intentFinalRender.putExtras(bundleArgs);

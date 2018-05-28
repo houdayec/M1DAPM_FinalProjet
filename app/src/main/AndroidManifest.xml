@@ -72,6 +72,11 @@
             android:name=".activities.Test_Multi_Thread"
             android:label="@string/title_activity_test__multi__thread"
             android:theme="@style/AppTheme.NoActionBar"></activity>
+        <activity
+            android:name=".activities.Test_recup_frame"
+            android:label="@string/title_activity_test__multi__thread"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>

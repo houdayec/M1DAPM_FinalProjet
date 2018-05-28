@@ -39,6 +39,7 @@ public class FinalRenderActivity extends AppCompatActivity {
      */
     @BindView(R.id.imageViewAnamorphosis)
     ImageView mImageViewAnamorphosis;
+    private int cpt=0;
 
     @BindView(R.id.downloadAnamorphosisButton)
     ImageButton mDownloadAnamorphosisButton;
@@ -92,7 +93,6 @@ public class FinalRenderActivity extends AppCompatActivity {
         else if(direction.equals("Left") || direction.equals("Right"))
             stackPixels = bmFrame.getWidth();
         duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
-
         System.out.println("current duration : " + (Integer.parseInt(duration)));
 
         sample = stackPixels/((Integer.parseInt(duration)/1000)*numberFrames);
@@ -209,6 +209,7 @@ public class FinalRenderActivity extends AppCompatActivity {
      * @param index
      */
     public void createAnamorphosis(Bitmap currentBmp,int[] pixels,int index){
+
         int height=currentBmp.getHeight();
         int width=currentBmp.getWidth();
         int currentPixel[]=new int[height*width];
@@ -217,6 +218,8 @@ public class FinalRenderActivity extends AppCompatActivity {
         {
             case "Top" :
                 if(index<height) {
+                    cpt++;
+                    Log.e("compteur",String.valueOf(cpt));
                     for (int j = 0; j < sample * width; j++) {
                         if((index*width)+j < width*height)
                             pixels[index * width + j] = currentPixel[index * width + j];

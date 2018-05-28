@@ -43,7 +43,7 @@ import dapm.g1.final_project.R;
 import dapm.g1.final_project.VideoUtils;
 import wseemann.media.FFmpegMediaMetadataRetriever;
 
-public class Test_Multi_Thread extends AppCompatActivity {
+public class Test_recup_frame extends AppCompatActivity {
 
     private Uri uriData;
     private String fileManager;
@@ -201,7 +201,7 @@ public class Test_Multi_Thread extends AppCompatActivity {
          */
         private void extractMpegFrames(String INPUT_FILE) throws IOException {
             MediaCodec decoder = null;
-            Test_Multi_Thread.CodecOutputSurface outputSurface = null;
+            Test_recup_frame.CodecOutputSurface outputSurface = null;
             MediaExtractor extractor = null;
             int saveWidth = mWidth; //640;
             int saveHeight = mHeight;//480;
@@ -237,7 +237,7 @@ public class Test_Multi_Thread extends AppCompatActivity {
                 }
 
                 // Could use width/height from the MediaFormat to get full-size frames.
-                outputSurface = new Test_Multi_Thread.CodecOutputSurface(saveWidth, saveHeight);
+                outputSurface = new Test_recup_frame.CodecOutputSurface(saveWidth, saveHeight);
 
                 // Create a MediaCodec decoder, and configure it with the MediaFormat from the
                 // extractor.  It's very important to use the format from the extractor because
@@ -270,7 +270,7 @@ public class Test_Multi_Thread extends AppCompatActivity {
          * Work loop.
          */
         void doExtract(MediaExtractor extractor, int trackIndex, MediaCodec decoder,
-                              Test_Multi_Thread.CodecOutputSurface outputSurface) throws IOException {
+                       Test_recup_frame.CodecOutputSurface outputSurface) throws IOException {
             final int TIMEOUT_USEC = 10000;
             ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -404,16 +404,16 @@ public class Test_Multi_Thread extends AppCompatActivity {
             case "Top" :
                 if(index<height) {
                     cpt++;
-             //       Log.e("compteur",String.valueOf(cpt));
-               //     Log.e("index", String.valueOf(index));
-                 //   Log.e("width", String.valueOf(width));
+                    //       Log.e("compteur",String.valueOf(cpt));
+                    //     Log.e("index", String.valueOf(index));
+                    //   Log.e("width", String.valueOf(width));
                     for (int j = 0; j < sample * width; j++) {
                         if((index*width)+j < width*height) {
                             pixels[index * width + j] = currentPixel[index * width + j];
                             tableauuse[index*width+j] +=1 ;
                         }
 
-                          //  Log.e("tableau", String.valueOf(index*width+j));
+                        //  Log.e("tableau", String.valueOf(index*width+j));
                     }
                 }
                 break;
@@ -470,7 +470,7 @@ public class Test_Multi_Thread extends AppCompatActivity {
      */
     private static class CodecOutputSurface
             implements SurfaceTexture.OnFrameAvailableListener {
-        private Test_Multi_Thread.STextureRender mTextureRender;
+        private Test_recup_frame.STextureRender mTextureRender;
         private SurfaceTexture mSurfaceTexture;
         private Surface mSurface;
 
@@ -493,8 +493,8 @@ public class Test_Multi_Thread extends AppCompatActivity {
             if (width <= 0 || height <= 0) {
                 throw new IllegalArgumentException();
             }
-         //   mWidth = width;
-          //  mHeight = height;
+            //   mWidth = width;
+            //  mHeight = height;
             finalPixels = new int[mWidth*mHeight];
             finalBmp=Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
             bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
@@ -508,7 +508,7 @@ public class Test_Multi_Thread extends AppCompatActivity {
          * Creates interconnected instances of TextureRender, SurfaceTexture, and Surface.
          */
         private void setup() {
-            mTextureRender = new Test_Multi_Thread.STextureRender();
+            mTextureRender = new Test_recup_frame.STextureRender();
             mTextureRender.surfaceCreated();
 
             if (VERBOSE) Log.d(TAG, "textureID=" + mTextureRender.getTextureId());
@@ -692,24 +692,16 @@ public class Test_Multi_Thread extends AppCompatActivity {
                     mPixelBuf);
             mPixelBuf.rewind();
 
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        while(true) {
-                            bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-                            bmp.copyPixelsFromBuffer(mPixelBuf);
-                            createAnamorphosis(bmp,finalPixels,indexRangePixels);
-                            bmp.recycle();
-                            indexRangePixels += sample;
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            };
 
-            thread.start();
+             bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+             bmp.copyPixelsFromBuffer(mPixelBuf);
+             createAnamorphosis(bmp,finalPixels,indexRangePixels);
+             bmp.recycle();
+             indexRangePixels += sample;
+
+
+
+
 
 
             System.out.println("frame " + index++);
