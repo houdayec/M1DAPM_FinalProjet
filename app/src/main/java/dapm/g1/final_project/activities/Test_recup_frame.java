@@ -47,7 +47,7 @@ public class Test_recup_frame extends AppCompatActivity {
 
     private Uri uriData;
     private String fileManager;
-    private static int cpt=0;
+    private static int cpt = 0;
 
     private static final String TAG = "ExtractMpegFramesTest";
     private static final boolean VERBOSE = true;           // lots of logging
@@ -103,29 +103,28 @@ public class Test_recup_frame extends AppCompatActivity {
 
         // Retrieving first frame in order to set up settings
 
-        Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(0,FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
-        int stackPixels=1;
-        if(direction.equals("Top") || direction.equals("Bottom"))
+        Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(0, FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
+        int stackPixels = 1;
+        if (direction.equals("Top") || direction.equals("Bottom"))
             stackPixels = bmFrame.getHeight();
-        else if(direction.equals("Left") || direction.equals("Right"))
+        else if (direction.equals("Left") || direction.equals("Right"))
             stackPixels = bmFrame.getWidth();
-        mWidth=bmFrame.getWidth();
-        mHeight=bmFrame.getHeight();
-        tableauuse=new int[mWidth*mHeight];
-        for(int i=0;i<mWidth*mHeight;i++)
-        {
+        mWidth = bmFrame.getWidth();
+        mHeight = bmFrame.getHeight();
+        tableauuse = new int[mWidth * mHeight];
+        for (int i = 0; i < mWidth * mHeight; i++) {
             tableauuse[i] = 0;
         }
         duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
 
         System.out.println("current duration : " + (Integer.parseInt(duration)));
 
-        sample = stackPixels/((Integer.parseInt(duration)/1000)*numberFrames);
-        if(sample == 0)
+        sample = stackPixels / ((Integer.parseInt(duration) / 1000) * numberFrames);
+        if (sample == 0)
             sample = 1;
-        System.out.println("start scale "+ sample);
-        Log.e("scale",String.valueOf(sample));
-        intervalRefresh = 1000000/numberFrames;
+        System.out.println("start scale " + sample);
+        Log.e("scale", String.valueOf(sample));
+        intervalRefresh = 1000000 / numberFrames;
 
         duration = String.valueOf(Integer.valueOf(duration) * 1000);
 
@@ -150,15 +149,16 @@ public class Test_recup_frame extends AppCompatActivity {
         @Override
         protected String doInBackground(String... params) {
 
+
             try {
                 extractMpegFrames(INPUT_FILE);
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
+
             return "Done";
         }
-
 
 
         @Override
@@ -168,10 +168,10 @@ public class Test_recup_frame extends AppCompatActivity {
             //finalBmp.setPixels(finalPixels, 0, mWidth, 0, 0,mWidth, mHeight);
             mImageViewAnamorphosis.setImageBitmap(finalBmp);
 
-            Log.e("onPostExecute","reached");
+            Log.e("onPostExecute", "reached");
 
             Toast.makeText(getBaseContext(), "Traitement fini", Toast.LENGTH_SHORT).show();
-            for(int i=0;i<mWidth*mHeight;i++)
+            for (int i = 0; i < mWidth * mHeight; i++)
                 System.out.println(tableauuse[i]);
 
         }
@@ -183,7 +183,7 @@ public class Test_recup_frame extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(int[]... pixels) {
-            finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0,mWidth, mHeight);
+            finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0, mWidth, mHeight);
             mImageViewAnamorphosis.setImageBitmap(finalBmp);
         }
 
@@ -205,8 +205,8 @@ public class Test_recup_frame extends AppCompatActivity {
             MediaExtractor extractor = null;
             int saveWidth = mWidth; //640;
             int saveHeight = mHeight;//480;
-            Log.e("largeur ",String.valueOf(mWidth));
-            Log.e("hauteur ",String.valueOf(mHeight));
+            Log.e("largeur ", String.valueOf(mWidth));
+            Log.e("hauteur ", String.valueOf(mHeight));
 
             try {
                 File inputFile = new File(INPUT_FILE);   // must be an absolute path
@@ -231,9 +231,9 @@ public class Test_recup_frame extends AppCompatActivity {
                             format.getInteger(MediaFormat.KEY_HEIGHT));
                     Log.d(TAG, "Duration is " + format.getLong(MediaFormat.KEY_DURATION));//micro
                     Log.d(TAG, "Frame rate is " + format.getInteger(MediaFormat.KEY_FRAME_RATE));
-                    sample = format.getInteger(MediaFormat.KEY_HEIGHT)/((Integer.parseInt(duration)/1000000)*format.getInteger(MediaFormat.KEY_FRAME_RATE));
+                    sample = format.getInteger(MediaFormat.KEY_HEIGHT) / ((Integer.parseInt(duration) / 1000000) * format.getInteger(MediaFormat.KEY_FRAME_RATE));
                     //sample=1;
-                    System.out.println("start scale "+ sample);
+                    System.out.println("start scale " + sample);
                 }
 
                 // Could use width/height from the MediaFormat to get full-size frames.
@@ -390,68 +390,68 @@ public class Test_recup_frame extends AppCompatActivity {
 
     /**
      * Method to create an anamorphosis
+     *
      * @param currentBmp
      * @param pixels
      * @param index
      */
-    public static void createAnamorphosis(Bitmap currentBmp, int[] pixels, int index){
-        int height=currentBmp.getHeight();
-        int width=currentBmp.getWidth();
-        int currentPixel[]=new int[height*width];
+    public static void createAnamorphosis(Bitmap currentBmp, int[] pixels, int index) {
+        int height = currentBmp.getHeight();
+        int width = currentBmp.getWidth();
+        int currentPixel[] = new int[height * width];
         currentBmp.getPixels(currentPixel, 0, width, 0, 0, width, height);
-        switch (direction)
-        {
-            case "Top" :
-                if(index<height) {
+        switch (direction) {
+            case "Top":
+                if (index < height) {
                     cpt++;
                     //       Log.e("compteur",String.valueOf(cpt));
                     //     Log.e("index", String.valueOf(index));
                     //   Log.e("width", String.valueOf(width));
                     for (int j = 0; j < sample * width; j++) {
-                        if((index*width)+j < width*height) {
+                        if ((index * width) + j < width * height) {
                             pixels[index * width + j] = currentPixel[index * width + j];
-                            tableauuse[index*width+j] +=1 ;
+                            tableauuse[index * width + j] += 1;
                         }
 
                         //  Log.e("tableau", String.valueOf(index*width+j));
                     }
                 }
                 break;
-            case "Bottom" :
-                if(index<height) {
-                    int indexTmp = (height-1) - index;
-                    for (int j = (height-1); j >(height-1)-(sample * width); j--) {
-                        if((indexTmp*width)+j < width*height){
+            case "Bottom":
+                if (index < height) {
+                    int indexTmp = (height - 1) - index;
+                    for (int j = (height - 1); j > (height - 1) - (sample * width); j--) {
+                        if ((indexTmp * width) + j < width * height) {
                             pixels[indexTmp * width + j] = currentPixel[indexTmp * width + j];
                         }
                     }
                 }
                 break;
-            case "Left" :
-                if(index<width) {
+            case "Left":
+                if (index < width) {
                     for (int k = 0; k < sample; k++) {
                         for (int i = 0; i < height; i++) {
-                            if ((i*width)+index+k < width * height)
-                                pixels[i * width + (index+k)] = currentPixel[i * width + (index+k)];
+                            if ((i * width) + index + k < width * height)
+                                pixels[i * width + (index + k)] = currentPixel[i * width + (index + k)];
                         }
                     }
                 }
                 break;
 
-            case "Right" :
-                if(index<width) {
-                    int indexTmp = (width-1) - index;
+            case "Right":
+                if (index < width) {
+                    int indexTmp = (width - 1) - index;
                     for (int k = 0; k < sample; k++) {
                         for (int i = 0; i < height; i++) {
-                            if ((i*width)+indexTmp-k > 0)
-                                pixels[i * width + (indexTmp-k)] = currentPixel[i * width + (indexTmp-k)];
+                            if ((i * width) + indexTmp - k > 0)
+                                pixels[i * width + (indexTmp - k)] = currentPixel[i * width + (indexTmp - k)];
                         }
                     }
                 }
                 break;
             default:
                 System.out.println("Error on the direction");
-                Log.e("error","errror");
+                Log.e("error", "errror");
                 break;
         }
 
@@ -495,8 +495,8 @@ public class Test_recup_frame extends AppCompatActivity {
             }
             //   mWidth = width;
             //  mHeight = height;
-            finalPixels = new int[mWidth*mHeight];
-            finalBmp=Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+            finalPixels = new int[mWidth * mHeight];
+            finalBmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
             bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
 
             eglSetup();
@@ -693,16 +693,24 @@ public class Test_recup_frame extends AppCompatActivity {
             mPixelBuf.rewind();
 
 
-             bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-             bmp.copyPixelsFromBuffer(mPixelBuf);
-             createAnamorphosis(bmp,finalPixels,indexRangePixels);
-             bmp.recycle();
-             indexRangePixels += sample;
+          /*  Thread thread = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        while(true) {*/
+            bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+            bmp.copyPixelsFromBuffer(mPixelBuf);
+            createAnamorphosis(bmp, finalPixels, indexRangePixels);
+            bmp.recycle();
+            indexRangePixels += sample;
+                     /*   }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
 
-
-
-
-
+            thread.start();*/
 
             System.out.println("frame " + index++);
 
@@ -732,8 +740,8 @@ public class Test_recup_frame extends AppCompatActivity {
                 // X, Y, Z, U, V
                 -1.0f, -1.0f, 0, 0.f, 0.f,
                 1.0f, -1.0f, 0, 1.f, 0.f,
-                -1.0f,  1.0f, 0, 0.f, 1.f,
-                1.0f,  1.0f, 0, 1.f, 1.f,
+                -1.0f, 1.0f, 0, 0.f, 1.f,
+                1.0f, 1.0f, 0, 1.f, 1.f,
         };
 
         private FloatBuffer mTriangleVertices;
