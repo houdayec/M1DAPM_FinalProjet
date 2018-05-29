@@ -182,7 +182,7 @@ public class FinalRenderActivity extends AppCompatActivity {
      * Inner class (Asynchronous task) to get all the frames from a video //TODO MICKAEL ALGO IMP ?
      */
     @SuppressLint("NewApi")
-    private class FramesExtraction extends AsyncTask<String, int[], String> {
+    private class FramesExtraction extends AsyncTask<String, int[], String>{
 
         @Override
         protected String doInBackground(String... params) {
