@@ -365,7 +365,7 @@ public class FinalRenderActivity extends AppCompatActivity {
      * @param lastBmp
      * @param bmpToCreate
      */
-    public Bitmap bitmapInterpolation(Bitmap firstBmp, Bitmap lastBmp, float bmpToCreate){
+    public static Bitmap bitmapInterpolation(Bitmap firstBmp, Bitmap lastBmp, float bmpToCreate){
         int height = firstBmp.getHeight();
         int width = firstBmp.getWidth();
         int initialPixels[] = new int[height * width];
