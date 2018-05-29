@@ -1,7 +1,9 @@
 package dapm.g1.final_project.activities;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
+import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
@@ -14,18 +16,16 @@ import android.opengl.EGLSurface;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Surface;
-import android.view.View;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -36,13 +36,18 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import dapm.g1.final_project.PathUtil;
 import dapm.g1.final_project.R;
+import dapm.g1.final_project.VideoUtils;
+import wseemann.media.FFmpegMediaMetadataRetriever;
 
-public class Test_Algo_MT extends AppCompatActivity {
+public class Test_recup_frame extends AppCompatActivity {
 
     private Uri uriData;
     private String fileManager;
+    private static int cpt = 0;
 
     private static final String TAG = "ExtractMpegFramesTest";
     private static final boolean VERBOSE = true;           // lots of logging
@@ -54,16 +59,74 @@ public class Test_Algo_MT extends AppCompatActivity {
 
     private HorizontalScrollView mHorizontalScrollView;
     static int index = 0;
+    static String direction = "Top";
+    static int sample = 1;
+    public static int indexRangePixels = 0;
+
+    private static int[] finalPixels;
+    static int mWidth;
+    static int mHeight;
+
+    protected static Bitmap finalBmp;
+    static Bitmap bmp;
+    public static int[] tableauuse;
+
+    // Binding view
+    @BindView(R.id.imageViewAnamorphosis)
+    ImageView mImageViewAnamorphosis;
+    private FFmpegMediaMetadataRetriever mediaMetadataRetriever;
+    private String duration;
+    private int intervalRefresh;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test__algo__mt);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        // Binding view
+
+        ButterKnife.bind(this);
+
+        // Getting data from previous activity
 
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
         fileManager = PathUtil.getPath(this, uriData);
+
+        mediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
+        mediaMetadataRetriever.setDataSource(fileManager);
+
+        int numberFrames = VideoUtils.getFrameRateVideo(fileManager);
+        System.out.println("The video has a " + numberFrames + " frames / second");
+
+        // Retrieving first frame in order to set up settings
+
+        Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(0, FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
+        int stackPixels = 1;
+        if (direction.equals("Top") || direction.equals("Bottom"))
+            stackPixels = bmFrame.getHeight();
+        else if (direction.equals("Left") || direction.equals("Right"))
+            stackPixels = bmFrame.getWidth();
+        mWidth = bmFrame.getWidth();
+        mHeight = bmFrame.getHeight();
+        tableauuse = new int[mWidth * mHeight];
+        for (int i = 0; i < mWidth * mHeight; i++) {
+            tableauuse[i] = 0;
+        }
+        duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
+
+        System.out.println("current duration : " + (Integer.parseInt(duration)));
+
+        sample = stackPixels / ((Integer.parseInt(duration) / 1000) * numberFrames);
+        if (sample == 0)
+            sample = 1;
+        System.out.println("start scale " + sample);
+        Log.e("scale", String.valueOf(sample));
+        intervalRefresh = 1000000 / numberFrames;
+
+        duration = String.valueOf(Integer.valueOf(duration) * 1000);
 
         System.out.println(TAG + " with video path : " + fileManager.toString());
 
@@ -71,244 +134,328 @@ public class Test_Algo_MT extends AppCompatActivity {
 
         mHorizontalScrollView = findViewById(R.id.horizontalScrollView);
 
-        try {
-            new ExtractMpegFramesWrapper (this).run();
-        } catch (Throwable throwable) {
-            throwable.printStackTrace();
-        }
+        // Starting extraction
 
-    }
+        new FramesExtraction().execute();
 
-    /** test entry point */
-    public void testExtractMpegFrames() throws Throwable {
-        Test_Algo_MT.ExtractMpegFramesWrapper.runTest(this);
     }
 
     /**
-     * Wraps extractMpegFrames().  This is necessary because SurfaceTexture will try to use
-     * the looper in the current thread if one exists, and the CTS tests create one on the
-     * test thread.
-     *
-     * The wrapper propagates exceptions thrown by the worker thread back to the caller.
+     * Inner class (Asynchronous task) to get all the frames from a video //TODO MICKAEL ALGO IMP ?
      */
-    private static class ExtractMpegFramesWrapper implements Runnable {
-        private Throwable mThrowable;
-        private Test_Algo_MT mTest;
+    @SuppressLint("NewApi")
+    private class FramesExtraction extends AsyncTask<String, int[], String> {
 
-        private ExtractMpegFramesWrapper(Test_Algo_MT test) {
-            mTest = test;
+        @Override
+        protected String doInBackground(String... params) {
+
+
+            try {
+                extractMpegFrames(INPUT_FILE);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            return "Done";
+        }
+
+
+        @Override
+        protected void onPostExecute(String result) {
+
+            //mProgressDialog.dismiss();
+            //finalBmp.setPixels(finalPixels, 0, mWidth, 0, 0,mWidth, mHeight);
+            mImageViewAnamorphosis.setImageBitmap(finalBmp);
+
+            Log.e("onPostExecute", "reached");
+
+            Toast.makeText(getBaseContext(), "Traitement fini", Toast.LENGTH_SHORT).show();
+            for (int i = 0; i < mWidth * mHeight; i++)
+                System.out.println(tableauuse[i]);
+
         }
 
         @Override
-        public void run() {
+        protected void onPreExecute() {
+
+        }
+
+        @Override
+        protected void onProgressUpdate(int[]... pixels) {
+            finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0, mWidth, mHeight);
+            mImageViewAnamorphosis.setImageBitmap(finalBmp);
+        }
+
+        /**
+         * CUSTOM METHODS
+         */
+
+        /**
+         * Tests extraction from an MP4 to a series of PNG files.
+         * <p>
+         * We scale the video to 640x480 for the PNG just to demonstrate that we can scale the
+         * video with the GPU.  If the input video has a different aspect ratio, we could preserve
+         * it by adjusting the GL viewport to get letterboxing or pillarboxing, but generally if
+         * you're extracting frames you don't want black bars.
+         */
+        private void extractMpegFrames(String INPUT_FILE) throws IOException {
+            MediaCodec decoder = null;
+            Test_recup_frame.CodecOutputSurface outputSurface = null;
+            MediaExtractor extractor = null;
+            int saveWidth = mWidth; //640;
+            int saveHeight = mHeight;//480;
+            Log.e("largeur ", String.valueOf(mWidth));
+            Log.e("hauteur ", String.valueOf(mHeight));
+
             try {
-                mTest.extractMpegFrames();
-            } catch (Throwable th) {
-                mThrowable = th;
-            }
-        }
+                File inputFile = new File(INPUT_FILE);   // must be an absolute path
+                System.out.println("extractMpegFrames file : " + INPUT_FILE);
+                // The MediaExtractor error messages aren't very useful.  Check to see if the input
+                // file exists so we can throw a better one if it's not there.
+                if (!inputFile.canRead()) {
+                    throw new FileNotFoundException("Unable to read " + inputFile);
+                }
 
-        /** Entry point. */
-        public static void runTest(Test_Algo_MT obj) throws Throwable {
-            Test_Algo_MT.ExtractMpegFramesWrapper wrapper = new Test_Algo_MT.ExtractMpegFramesWrapper(obj);
-            Thread th = new Thread(wrapper, "codec test");
-            th.start();
-            th.join();
-            if (wrapper.mThrowable != null) {
-                throw wrapper.mThrowable;
-            }
-        }
-    }
+                extractor = new MediaExtractor();
+                extractor.setDataSource(inputFile.toString());
+                int trackIndex = selectTrack(extractor);
+                if (trackIndex < 0) {
+                    throw new RuntimeException("No video track found in " + inputFile);
+                }
+                extractor.selectTrack(trackIndex);
 
-    /**
-     * Tests extraction from an MP4 to a series of PNG files.
-     * <p>
-     * We scale the video to 640x480 for the PNG just to demonstrate that we can scale the
-     * video with the GPU.  If the input video has a different aspect ratio, we could preserve
-     * it by adjusting the GL viewport to get letterboxing or pillarboxing, but generally if
-     * you're extracting frames you don't want black bars.
-     */
-    private void extractMpegFrames() throws IOException {
-        MediaCodec decoder = null;
-        Test_Algo_MT.CodecOutputSurface outputSurface = null;
-        MediaExtractor extractor = null;
-        int saveWidth = 640;
-        int saveHeight = 480;
-
-        try {
-            File inputFile = new File(INPUT_FILE);   // must be an absolute path
-            // The MediaExtractor error messages aren't very useful.  Check to see if the input
-            // file exists so we can throw a better one if it's not there.
-            if (!inputFile.canRead()) {
-                throw new FileNotFoundException("Unable to read " + inputFile);
-            }
-
-            extractor = new MediaExtractor();
-            extractor.setDataSource(inputFile.toString());
-            int trackIndex = selectTrack(extractor);
-            if (trackIndex < 0) {
-                throw new RuntimeException("No video track found in " + inputFile);
-            }
-            extractor.selectTrack(trackIndex);
-
-            MediaFormat format = extractor.getTrackFormat(trackIndex);
-            if (VERBOSE) {
-                Log.d(TAG, "Video size is " + format.getInteger(MediaFormat.KEY_WIDTH) + "x" +
-                        format.getInteger(MediaFormat.KEY_HEIGHT));
-            }
-
-            // Could use width/height from the MediaFormat to get full-size frames.
-            outputSurface = new Test_Algo_MT.CodecOutputSurface(saveWidth, saveHeight);
-
-            // Create a MediaCodec decoder, and configure it with the MediaFormat from the
-            // extractor.  It's very important to use the format from the extractor because
-            // it contains a copy of the CSD-0/CSD-1 codec-specific data chunks.
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            decoder = MediaCodec.createDecoderByType(mime);
-            decoder.configure(format, outputSurface.getSurface(), null, 0);
-            decoder.start();
-
-            doExtract(extractor, trackIndex, decoder, outputSurface);
-        } finally {
-            // release everything we grabbed
-            if (outputSurface != null) {
-                outputSurface.release();
-                outputSurface = null;
-            }
-            if (decoder != null) {
-                decoder.stop();
-                decoder.release();
-                decoder = null;
-            }
-            if (extractor != null) {
-                extractor.release();
-                extractor = null;
-            }
-        }
-    }
-
-    /**
-     * Selects the video track, if any.
-     *
-     * @return the track index, or -1 if no video track is found.
-     */
-    private int selectTrack(MediaExtractor extractor) {
-        // Select the first video track we find, ignore the rest.
-        int numTracks = extractor.getTrackCount();
-        for (int i = 0; i < numTracks; i++) {
-            MediaFormat format = extractor.getTrackFormat(i);
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            if (mime.startsWith("video/")) {
+                MediaFormat format = extractor.getTrackFormat(trackIndex);
                 if (VERBOSE) {
-                    Log.d(TAG, "Extractor selected track " + i + " (" + mime + "): " + format);
+                    Log.d(TAG, "Video size is " + format.getInteger(MediaFormat.KEY_WIDTH) + "x" +
+                            format.getInteger(MediaFormat.KEY_HEIGHT));
+                    Log.d(TAG, "Duration is " + format.getLong(MediaFormat.KEY_DURATION));//micro
+                    Log.d(TAG, "Frame rate is " + format.getInteger(MediaFormat.KEY_FRAME_RATE));
+                    sample = format.getInteger(MediaFormat.KEY_HEIGHT) / ((Integer.parseInt(duration) / 1000000) * format.getInteger(MediaFormat.KEY_FRAME_RATE));
+                    //sample=1;
+                    System.out.println("start scale " + sample);
                 }
-                return i;
+
+                // Could use width/height from the MediaFormat to get full-size frames.
+                outputSurface = new Test_recup_frame.CodecOutputSurface(saveWidth, saveHeight);
+
+                // Create a MediaCodec decoder, and configure it with the MediaFormat from the
+                // extractor.  It's very important to use the format from the extractor because
+                // it contains a copy of the CSD-0/CSD-1 codec-specific data chunks.
+                String mime = format.getString(MediaFormat.KEY_MIME);
+                decoder = MediaCodec.createDecoderByType(mime);
+                decoder.configure(format, outputSurface.getSurface(), null, 0);
+                decoder.start();
+
+                doExtract(extractor, trackIndex, decoder, outputSurface);
+            } finally {
+                // release everything we grabbed
+                if (outputSurface != null) {
+                    outputSurface.release();
+                    outputSurface = null;
+                }
+                if (decoder != null) {
+                    decoder.stop();
+                    decoder.release();
+                    decoder = null;
+                }
+                if (extractor != null) {
+                    extractor.release();
+                    extractor = null;
+                }
             }
         }
 
-        return -1;
+        /**
+         * Work loop.
+         */
+        void doExtract(MediaExtractor extractor, int trackIndex, MediaCodec decoder,
+                       Test_recup_frame.CodecOutputSurface outputSurface) throws IOException {
+            final int TIMEOUT_USEC = 10000;
+            ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
+            MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+            int inputChunk = 0;
+            int decodeCount = 0;
+            long frameSaveTime = 0;
+
+            boolean outputDone = false;
+            boolean inputDone = false;
+            while (!outputDone) {
+                if (VERBOSE) Log.d(TAG, "loop");
+
+                // Feed more data to the decoder.
+                if (!inputDone) {
+                    int inputBufIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC);
+                    if (inputBufIndex >= 0) {
+                        ByteBuffer inputBuf = decoderInputBuffers[inputBufIndex];
+                        // Read the sample data into the ByteBuffer.  This neither respects nor
+                        // updates inputBuf's position, limit, etc.
+                        int chunkSize = extractor.readSampleData(inputBuf, 0);
+                        if (chunkSize < 0) {
+                            // End of stream -- send empty frame with EOS flag set.
+                            decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L,
+                                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                            inputDone = true;
+                            if (VERBOSE) Log.d(TAG, "sent input EOS");
+                        } else {
+                            if (extractor.getSampleTrackIndex() != trackIndex) {
+                                Log.w(TAG, "WEIRD: got sample from track " +
+                                        extractor.getSampleTrackIndex() + ", expected " + trackIndex);
+                            }
+                            long presentationTimeUs = extractor.getSampleTime();
+                            decoder.queueInputBuffer(inputBufIndex, 0, chunkSize,
+                                    presentationTimeUs, 0 /*flags*/);
+                            if (VERBOSE) {
+                                Log.d(TAG, "submitted frame " + inputChunk + " to dec, size=" +
+                                        chunkSize);
+                            }
+                            inputChunk++;
+                            extractor.advance();
+                        }
+                    } else {
+                        if (VERBOSE) Log.d(TAG, "input buffer not available");
+                    }
+                }
+
+                if (!outputDone) {
+                    int decoderStatus = decoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
+                    if (decoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
+                        // no output available yet
+                        if (VERBOSE) Log.d(TAG, "no output from decoder available");
+                    } else if (decoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+                        // not important for us, since we're using Surface
+                        if (VERBOSE) Log.d(TAG, "decoder output buffers changed");
+                    } else if (decoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                        MediaFormat newFormat = decoder.getOutputFormat();
+                        if (VERBOSE) Log.d(TAG, "decoder output format changed: " + newFormat);
+                    } else { // decoderStatus >= 0
+                        if (VERBOSE) Log.d(TAG, "surface decoder given buffer " + decoderStatus +
+                                " (size=" + info.size + ")");
+                        if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                            if (VERBOSE) Log.d(TAG, "output EOS");
+                            outputDone = true;
+                        }
+
+                        boolean doRender = (info.size != 0);
+
+                        // As soon as we call releaseOutputBuffer, the buffer will be forwarded
+                        // to SurfaceTexture to convert to a texture.  The API doesn't guarantee
+                        // that the texture will be available before the call returns, so we
+                        // need to wait for the onFrameAvailable callback to fire.
+                        decoder.releaseOutputBuffer(decoderStatus, doRender);
+                        if (doRender) {
+                            if (VERBOSE) Log.d(TAG, "awaiting decode of frame " + decodeCount);
+                            outputSurface.awaitNewImage();
+                            outputSurface.drawImage(true);
+
+                            if (decodeCount < MAX_FRAMES) {
+                                long startWhen = System.nanoTime();
+                                outputSurface.saveFrame();
+                                publishProgress(finalPixels);
+                                frameSaveTime += System.nanoTime() - startWhen;
+                            }
+                            decodeCount++;
+                        }
+                    }
+                }
+            }
+
+            int numSaved = (MAX_FRAMES < decodeCount) ? MAX_FRAMES : decodeCount;
+            Log.d(TAG, "Saving " + numSaved + " frames took " +
+                    (frameSaveTime / numSaved / 1000) + " us per frame");
+        }
+
+        /**
+         * Selects the video track, if any.
+         *
+         * @return the track index, or -1 if no video track is found.
+         */
+        private int selectTrack(MediaExtractor extractor) {
+            // Select the first video track we find, ignore the rest.
+            int numTracks = extractor.getTrackCount();
+            for (int i = 0; i < numTracks; i++) {
+                MediaFormat format = extractor.getTrackFormat(i);
+                String mime = format.getString(MediaFormat.KEY_MIME);
+                if (mime.startsWith("video/")) {
+                    if (VERBOSE) {
+                        Log.d(TAG, "Extractor selected track " + i + " (" + mime + "): " + format);
+                    }
+                    return i;
+                }
+            }
+            return -1;
+        }
+
     }
 
     /**
-     * Work loop.
+     * Method to create an anamorphosis
+     *
+     * @param currentBmp
+     * @param pixels
+     * @param index
      */
-    static void doExtract(MediaExtractor extractor, int trackIndex, MediaCodec decoder,
-                          Test_Algo_MT.CodecOutputSurface outputSurface) throws IOException {
-        final int TIMEOUT_USEC = 10000;
-        ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
-        MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
-        int inputChunk = 0;
-        int decodeCount = 0;
-        long frameSaveTime = 0;
-
-        boolean outputDone = false;
-        boolean inputDone = false;
-        while (!outputDone) {
-            if (VERBOSE) Log.d(TAG, "loop");
-
-            // Feed more data to the decoder.
-            if (!inputDone) {
-                int inputBufIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC);
-                if (inputBufIndex >= 0) {
-                    ByteBuffer inputBuf = decoderInputBuffers[inputBufIndex];
-                    // Read the sample data into the ByteBuffer.  This neither respects nor
-                    // updates inputBuf's position, limit, etc.
-                    int chunkSize = extractor.readSampleData(inputBuf, 0);
-                    if (chunkSize < 0) {
-                        // End of stream -- send empty frame with EOS flag set.
-                        decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L,
-                                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                        inputDone = true;
-                        if (VERBOSE) Log.d(TAG, "sent input EOS");
-                    } else {
-                        if (extractor.getSampleTrackIndex() != trackIndex) {
-                            Log.w(TAG, "WEIRD: got sample from track " +
-                                    extractor.getSampleTrackIndex() + ", expected " + trackIndex);
+    public static void createAnamorphosis(Bitmap currentBmp, int[] pixels, int index) {
+        int height = currentBmp.getHeight();
+        int width = currentBmp.getWidth();
+        int currentPixel[] = new int[height * width];
+        currentBmp.getPixels(currentPixel, 0, width, 0, 0, width, height);
+        switch (direction) {
+            case "Top":
+                if (index < height) {
+                    cpt++;
+                    //       Log.e("compteur",String.valueOf(cpt));
+                    //     Log.e("index", String.valueOf(index));
+                    //   Log.e("width", String.valueOf(width));
+                    for (int j = 0; j < sample * width; j++) {
+                        if ((index * width) + j < width * height) {
+                            pixels[index * width + j] = currentPixel[index * width + j];
+                            tableauuse[index * width + j] += 1;
                         }
-                        long presentationTimeUs = extractor.getSampleTime();
-                        decoder.queueInputBuffer(inputBufIndex, 0, chunkSize,
-                                presentationTimeUs, 0 /*flags*/);
-                        if (VERBOSE) {
-                            Log.d(TAG, "submitted frame " + inputChunk + " to dec, size=" +
-                                    chunkSize);
-                        }
-                        inputChunk++;
-                        extractor.advance();
-                    }
-                } else {
-                    if (VERBOSE) Log.d(TAG, "input buffer not available");
-                }
-            }
 
-            if (!outputDone) {
-                int decoderStatus = decoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
-                if (decoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
-                    // no output available yet
-                    if (VERBOSE) Log.d(TAG, "no output from decoder available");
-                } else if (decoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-                    // not important for us, since we're using Surface
-                    if (VERBOSE) Log.d(TAG, "decoder output buffers changed");
-                } else if (decoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                    MediaFormat newFormat = decoder.getOutputFormat();
-                    if (VERBOSE) Log.d(TAG, "decoder output format changed: " + newFormat);
-                } else { // decoderStatus >= 0
-                    if (VERBOSE) Log.d(TAG, "surface decoder given buffer " + decoderStatus +
-                            " (size=" + info.size + ")");
-                    if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                        if (VERBOSE) Log.d(TAG, "output EOS");
-                        outputDone = true;
-                    }
-
-                    boolean doRender = (info.size != 0);
-
-                    // As soon as we call releaseOutputBuffer, the buffer will be forwarded
-                    // to SurfaceTexture to convert to a texture.  The API doesn't guarantee
-                    // that the texture will be available before the call returns, so we
-                    // need to wait for the onFrameAvailable callback to fire.
-                    decoder.releaseOutputBuffer(decoderStatus, doRender);
-                    if (doRender) {
-                        if (VERBOSE) Log.d(TAG, "awaiting decode of frame " + decodeCount);
-                        outputSurface.awaitNewImage();
-                        outputSurface.drawImage(true);
-
-                        if (decodeCount < MAX_FRAMES) {
-                            File outputFile = new File(FILES_DIR,
-                                    String.format("frame-%02d.png", decodeCount));
-                            long startWhen = System.nanoTime();
-                            outputSurface.saveFrame(outputFile.toString());
-                            frameSaveTime += System.nanoTime() - startWhen;
-                        }
-                        decodeCount++;
+                        //  Log.e("tableau", String.valueOf(index*width+j));
                     }
                 }
-            }
+                break;
+            case "Bottom":
+                if (index < height) {
+                    int indexTmp = (height - 1) - index;
+                    for (int j = (height - 1); j > (height - 1) - (sample * width); j--) {
+                        if ((indexTmp * width) + j < width * height) {
+                            pixels[indexTmp * width + j] = currentPixel[indexTmp * width + j];
+                        }
+                    }
+                }
+                break;
+            case "Left":
+                if (index < width) {
+                    for (int k = 0; k < sample; k++) {
+                        for (int i = 0; i < height; i++) {
+                            if ((i * width) + index + k < width * height)
+                                pixels[i * width + (index + k)] = currentPixel[i * width + (index + k)];
+                        }
+                    }
+                }
+                break;
+
+            case "Right":
+                if (index < width) {
+                    int indexTmp = (width - 1) - index;
+                    for (int k = 0; k < sample; k++) {
+                        for (int i = 0; i < height; i++) {
+                            if ((i * width) + indexTmp - k > 0)
+                                pixels[i * width + (indexTmp - k)] = currentPixel[i * width + (indexTmp - k)];
+                        }
+                    }
+                }
+                break;
+            default:
+                System.out.println("Error on the direction");
+                Log.e("error", "errror");
+                break;
         }
 
-        int numSaved = (MAX_FRAMES < decodeCount) ? MAX_FRAMES : decodeCount;
-        Log.d(TAG, "Saving " + numSaved + " frames took " +
-                (frameSaveTime / numSaved / 1000) + " us per frame");
     }
-
 
     /**
      * Holds state associated with a Surface used for MediaCodec decoder output.
@@ -323,15 +470,14 @@ public class Test_Algo_MT extends AppCompatActivity {
      */
     private static class CodecOutputSurface
             implements SurfaceTexture.OnFrameAvailableListener {
-        private Test_Algo_MT.STextureRender mTextureRender;
+        private Test_recup_frame.STextureRender mTextureRender;
         private SurfaceTexture mSurfaceTexture;
         private Surface mSurface;
 
         private EGLDisplay mEGLDisplay = EGL14.EGL_NO_DISPLAY;
         private EGLContext mEGLContext = EGL14.EGL_NO_CONTEXT;
         private EGLSurface mEGLSurface = EGL14.EGL_NO_SURFACE;
-        int mWidth;
-        int mHeight;
+
 
         private Object mFrameSyncObject = new Object();     // guards mFrameAvailable
         private boolean mFrameAvailable;
@@ -347,8 +493,11 @@ public class Test_Algo_MT extends AppCompatActivity {
             if (width <= 0 || height <= 0) {
                 throw new IllegalArgumentException();
             }
-            mWidth = width;
-            mHeight = height;
+            //   mWidth = width;
+            //  mHeight = height;
+            finalPixels = new int[mWidth * mHeight];
+            finalBmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+            bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
 
             eglSetup();
             makeCurrent();
@@ -359,7 +508,7 @@ public class Test_Algo_MT extends AppCompatActivity {
          * Creates interconnected instances of TextureRender, SurfaceTexture, and Surface.
          */
         private void setup() {
-            mTextureRender = new Test_Algo_MT.STextureRender();
+            mTextureRender = new Test_recup_frame.STextureRender();
             mTextureRender.surfaceCreated();
 
             if (VERBOSE) Log.d(TAG, "textureID=" + mTextureRender.getTextureId());
@@ -537,58 +686,34 @@ public class Test_Algo_MT extends AppCompatActivity {
         /**
          * Saves the current frame to disk as a PNG image.
          */
-        public void saveFrame(String filename) throws IOException {
-            // glReadPixels gives us a ByteBuffer filled with what is essentially big-endian RGBA
-            // data (i.e. a byte of red, followed by a byte of green...).  To use the Bitmap
-            // constructor that takes an int[] array with pixel data, we need an int[] filled
-            // with little-endian ARGB data.
-            //
-            // If we implement this as a series of buf.get() calls, we can spend 2.5 seconds just
-            // copying data around for a 720p frame.  It's better to do a bulk get() and then
-            // rearrange the data in memory.  (For comparison, the PNG compress takes about 500ms
-            // for a trivial frame.)
-            //
-            // So... we set the ByteBuffer to little-endian, which should turn the bulk IntBuffer
-            // get() into a straight memcpy on most Android devices.  Our ints will hold ABGR data.
-            // Swapping B and R gives us ARGB.  We need about 30ms for the bulk get(), and another
-            // 270ms for the color swap.
-            //
-            // We can avoid the costly B/R swap here if we do it in the fragment shader (see
-            // http://stackoverflow.com/questions/21634450/ ).
-            //
-            // Having said all that... it turns out that the Bitmap#copyPixelsFromBuffer()
-            // method wants RGBA pixels, not ARGB, so if we create an empty bitmap and then
-            // copy pixel data in we can avoid the swap issue entirely, and just copy straight
-            // into the Bitmap from the ByteBuffer.
-            //
-            // Making this even more interesting is the upside-down nature of GL, which means
-            // our output will look upside-down relative to what appears on screen if the
-            // typical GL conventions are used.  (For ExtractMpegFrameTest, we avoid the issue
-            // by inverting the frame when we render it.)
-            //
-            // Allocating large buffers is expensive, so we really want mPixelBuf to be
-            // allocated ahead of time if possible.  We still get some allocations from the
-            // Bitmap / PNG creation.
-
+        public void saveFrame() throws IOException {
             mPixelBuf.rewind();
             GLES20.glReadPixels(0, 0, mWidth, mHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE,
                     mPixelBuf);
+            mPixelBuf.rewind();
 
-            BufferedOutputStream bos = null;
-            try {
-                bos = new BufferedOutputStream(new FileOutputStream(filename));
-                Bitmap bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-                mPixelBuf.rewind();
-                bmp.copyPixelsFromBuffer(mPixelBuf);
-                bmp.compress(Bitmap.CompressFormat.PNG, 90, bos);
-                bmp.recycle();
-                System.out.println("frame " + index++);
-            } finally {
-                if (bos != null) bos.close();
-            }
-            if (VERBOSE) {
-                Log.d(TAG, "Saved " + mWidth + "x" + mHeight + " frame as '" + filename + "'");
-            }
+
+          /*  Thread thread = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        while(true) {*/
+            bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+            bmp.copyPixelsFromBuffer(mPixelBuf);
+            createAnamorphosis(bmp, finalPixels, indexRangePixels);
+            bmp.recycle();
+            indexRangePixels += sample;
+                     /*   }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+
+            thread.start();*/
+
+            System.out.println("frame " + index++);
+
         }
 
         /**
@@ -615,8 +740,8 @@ public class Test_Algo_MT extends AppCompatActivity {
                 // X, Y, Z, U, V
                 -1.0f, -1.0f, 0, 0.f, 0.f,
                 1.0f, -1.0f, 0, 1.f, 0.f,
-                -1.0f,  1.0f, 0, 0.f, 1.f,
-                1.0f,  1.0f, 0, 1.f, 1.f,
+                -1.0f, 1.0f, 0, 0.f, 1.f,
+                1.0f, 1.0f, 0, 1.f, 1.f,
         };
 
         private FloatBuffer mTriangleVertices;
@@ -820,5 +945,6 @@ public class Test_Algo_MT extends AppCompatActivity {
             }
         }
     }
+
 
 }

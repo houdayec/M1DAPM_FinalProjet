@@ -419,26 +419,9 @@ public class RecordVideoActivity extends AppCompatActivity
         mTextureView = findViewById(R.id.texture);
     }
 
-    /*@Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.activity_record_video, container, false);
-    }
-
-    @Override
-    public void onViewCreated(final View view, Bundle savedInstanceState) {
-        view.findViewById(R.id.picture).setOnClickListener(this);
-        view.findViewById(R.id.info).setOnClickListener(this);
-        mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-    }
-
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        mFile = new File(this.getExternalFilesDir(null), "pic.jpg");
-    }*/
-
-
+    /**
+     * Lifecycle methods
+     */
 
     @Override
     public void onResume() {

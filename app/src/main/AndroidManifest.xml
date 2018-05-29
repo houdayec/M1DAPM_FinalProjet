@@ -34,9 +34,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity"
-            android:screenOrientation="portrait"
-            >
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -47,32 +47,36 @@
             android:name=".activities.TypeActivity"
             android:label="@string/title_activity_type"
             android:screenOrientation="portrait"
-
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".activities.RecordVideoActivity"
             android:label="@string/title_activity_record_video"
             android:screenOrientation="portrait"
-
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".activities.PreviewVideoActivity"
             android:label="@string/title_activity_preview_video"
             android:screenOrientation="portrait"
-
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".activities.FinalRenderActivity"
             android:label="@string/title_activity_final_render"
             android:screenOrientation="portrait"
-
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".activities.Test_Algo_MT"
             android:label="@string/title_activity_test__algo__mt"
             android:screenOrientation="portrait"
-
             android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".activities.Test_Multi_Thread"
+            android:label="@string/title_activity_test__multi__thread"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+        <activity
+            android:name=".activities.Test_recup_frame"
+            android:label="@string/title_activity_test__multi__thread"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>

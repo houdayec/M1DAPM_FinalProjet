@@ -13,10 +13,9 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -45,6 +44,7 @@ public class FinalRenderActivity extends AppCompatActivity {
      */
     @BindView(R.id.imageViewAnamorphosis)
     ImageView mImageViewAnamorphosis;
+    private int cpt=0;
 
     @BindView(R.id.downloadAnamorphosisButton)
     ImageButton mDownloadAnamorphosisButton;
@@ -55,17 +55,22 @@ public class FinalRenderActivity extends AppCompatActivity {
     @BindView(R.id.backToMenuButton)
     Button mBackToMenuButton;
 
+    /**
+     * Intern state
+     */
     private String duration;
-    protected LinearLayout llay;
-    protected ProgressDialog effectProgressDialog;
     public FFmpegMediaMetadataRetriever mediaMetadataRetriever;
     public double intervalRefresh;
     protected  Bitmap finalBmp;
-    protected ProgressDialog mProgressDialog;
     public String fileManager;
     private int sample = 1;
     private Uri uriData;
     private String direction;
+
+    // Interpolation utils
+    private boolean interpolate = false;
+    private int interpolationSample;
+
 
     @SuppressLint("NewApi")
     @Override
@@ -76,7 +81,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         // Binding the view
         ButterKnife.bind(this);
 
-
+        // Getting data from the previous activity
 
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
 
@@ -90,7 +95,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         int numberFrames = VideoUtils.getFrameRateVideo(fileManager);
         System.out.println("The video has a " + numberFrames + " frames / second");
 
-        // TODO DIRECTION
+        // Retrieving the first frame to set up the right settings
 
         Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(0,FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
         int stackPixels=1;
@@ -99,12 +104,20 @@ public class FinalRenderActivity extends AppCompatActivity {
         else if(direction.equals("Left") || direction.equals("Right"))
             stackPixels = bmFrame.getWidth();
         duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
-
         System.out.println("current duration : " + (Integer.parseInt(duration)));
 
+        // 1920 / (30fps * 3sec) = scale
+        // Si scale > 4 on interpole
         sample = stackPixels/((Integer.parseInt(duration)/1000)*numberFrames);
-        if(sample == 0)
-            sample = 1;
+
+        // test if we need to interpolate
+        if(sample > 4){
+            interpolate = true;
+            sample = 4;
+            // Nombre d'images a créer entre chaque images
+            interpolationSample = stackPixels/((Integer.parseInt(duration)/1000)*numberFrames*4) - 1;
+        }
+
         System.out.println("start scale "+ sample);
         intervalRefresh = 1000000/numberFrames;
 
@@ -178,24 +191,66 @@ public class FinalRenderActivity extends AppCompatActivity {
             Bitmap bmpStart=null;
             int [] pixelsArrayTemp=null;
             int indice=0;
+            // Second bitmap if we need to interpolate
+            Bitmap bmpEnd = null;
 
             System.out.println("Current file duration : " + duration);
 
             while(currentTime < Integer.valueOf(duration)){
                 Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(currentTime,FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
+
                 if(currentTime==0)
                 {
                     bmpStart=bmFrame;
                     pixelsArrayTemp=new int[bmpStart.getWidth()*bmpStart.getHeight()];
                     finalBmp=Bitmap.createBitmap(bmpStart.getWidth(), bmpStart.getHeight(), Bitmap.Config.ARGB_8888);
                 }
-                if(bmFrame!=null)
-                {
-                    createAnamorphosis(bmFrame,pixelsArrayTemp,indice);
-                    System.out.println("scale : " + sample);
-                    indice+=sample;
-                    int [] valeur={bmFrame.getWidth(),bmFrame.getHeight()};
-                    publishProgress(pixelsArrayTemp,valeur);
+
+                if(interpolate){
+                    currentTime += intervalRefresh;
+                    bmpEnd = mediaMetadataRetriever.getFrameAtTime(currentTime, FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
+
+                    createAnamorphosis(bmFrame, pixelsArrayTemp, indice);
+                    indice += sample;
+                    if(bmFrame != null) {
+                        int[] valeur = {bmFrame.getWidth(), bmFrame.getHeight()};
+                        publishProgress(pixelsArrayTemp, valeur);
+                    }
+                    // Calcul du coefficient à utiliser pour le calcul d'interpolation
+                    float bmpCount = (float) (1.0/interpolationSample);
+                    Log.e("bmpCount", String.valueOf(bmpCount));
+                    // On créér le nombre d'image calculé précédement
+                    for(float i = bmpCount; i < 1; i += bmpCount) {
+                        if(bmpEnd != null) {
+                            // Calcul d'une nouvelle image interpolée
+                            Bitmap bmpToWorkOn = bitmapInterpolation(bmFrame, bmpEnd, i);
+
+                            createAnamorphosis(bmpToWorkOn, pixelsArrayTemp, indice);
+                            indice += sample;
+                            int[] valeur = {bmpEnd.getWidth(), bmpEnd.getHeight()};
+                            publishProgress(pixelsArrayTemp, valeur);
+
+                            Log.e("Interpolate", String.valueOf(i));
+                        }
+                    }
+
+                    if(bmpEnd != null) {
+                        createAnamorphosis(bmpEnd, pixelsArrayTemp, indice);
+                        int[] valeur = {bmpEnd.getWidth(), bmpEnd.getHeight()};
+                        publishProgress(pixelsArrayTemp, valeur);
+                    }
+
+                    indice += sample;
+                    Log.e("currentTime", String.valueOf(currentTime));
+                }
+                else {
+                    if (bmFrame != null) {
+                        createAnamorphosis(bmFrame, pixelsArrayTemp, indice);
+                        System.out.println("scale : " + sample);
+                        indice += sample;
+                        int[] valeur = {bmFrame.getWidth(), bmFrame.getHeight()};
+                        publishProgress(pixelsArrayTemp, valeur);
+                    }
                 }
                 currentTime += intervalRefresh;
                 System.out.println("currentTime : " + currentTime);
@@ -203,7 +258,9 @@ public class FinalRenderActivity extends AppCompatActivity {
          if(bmpStart != null) {
              finalBmp.setPixels(pixelsArrayTemp, 0, bmpStart.getWidth(), 0, 0, bmpStart.getWidth(), bmpStart.getHeight());
          }
-            return "Executed";}
+            return "Executed";
+        }
+
 
 
 
@@ -245,6 +302,7 @@ public class FinalRenderActivity extends AppCompatActivity {
      * @param index
      */
     public void createAnamorphosis(Bitmap currentBmp,int[] pixels,int index){
+
         int height=currentBmp.getHeight();
         int width=currentBmp.getWidth();
         int currentPixel[]=new int[height*width];
@@ -253,6 +311,8 @@ public class FinalRenderActivity extends AppCompatActivity {
         {
             case "Top" :
                 if(index<height) {
+                    cpt++;
+                    Log.e("compteur",String.valueOf(cpt));
                     for (int j = 0; j < sample * width; j++) {
                         if((index*width)+j < width*height)
                             pixels[index * width + j] = currentPixel[index * width + j];
@@ -299,6 +359,47 @@ public class FinalRenderActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Method to generate new bitmaps if needed
+     * @param firstBmp
+     * @param lastBmp
+     * @param bmpToCreate
+     */
+    public Bitmap bitmapInterpolation(Bitmap firstBmp, Bitmap lastBmp, float bmpToCreate){
+        int height = firstBmp.getHeight();
+        int width = firstBmp.getWidth();
+        int initialPixels[] = new int[height * width];
+        int finalPixels[] = new int[height * width];
+        int newPixels[] = new int[height * width];
+        int pixelColorStart[] = new int[3];
+        int pixelColorEnd[] = new int[3];
+        int newColor;
+
+        firstBmp.getPixels(initialPixels, 0, width, 0, 0, width, height);
+        lastBmp.getPixels(finalPixels, 0, width, 0, 0, width, height);
+
+        Log.e("Interpolate", "Creating a bitmap ...");
+        int k = 0;
+        while(k < initialPixels.length){
+            pixelColorStart[0] = Color.red(initialPixels[k]);
+            pixelColorStart[1] = Color.green(initialPixels[k]);
+            pixelColorStart[2] = Color.blue(initialPixels[k]);
+
+            pixelColorEnd[0] = Color.red(finalPixels[k]);
+            pixelColorEnd[1] = Color.green(finalPixels[k]);
+            pixelColorEnd[2] = Color.blue(finalPixels[k]);
 
 
+
+            newColor = Color.rgb((int)((1 - bmpToCreate)*pixelColorStart[0] + bmpToCreate*pixelColorEnd[0]),
+                    (int)((1 - bmpToCreate)*pixelColorStart[1] + bmpToCreate*pixelColorEnd[1]),
+                    (int)((1 - bmpToCreate)*pixelColorStart[2] + bmpToCreate*pixelColorEnd[2]));
+
+            newPixels[k] = newColor;
+            k++;
+        }
+        Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        newBitmap.setPixels(newPixels, 0, width, 0, 0, width, height);
+        return newBitmap;
+    }
 }

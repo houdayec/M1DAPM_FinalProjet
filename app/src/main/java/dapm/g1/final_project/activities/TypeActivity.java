@@ -1,7 +1,6 @@
 package dapm.g1.final_project.activities;
 
 import android.annotation.SuppressLint;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -10,46 +9,29 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
-import android.media.MediaExtractor;
-import android.media.MediaFormat;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
-import android.widget.Toast;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.lang.reflect.Type;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import dapm.g1.final_project.PathUtil;
+import dapm.g1.final_project.MainActivity;
 import dapm.g1.final_project.R;
-import dapm.g1.final_project.VideoUtils;
-import wseemann.media.FFmpegMediaMetadataRetriever;
 
 public class TypeActivity extends AppCompatActivity implements View.OnClickListener {
 
     /**
-     * INTERN VARIABLES
+     * VIEW BINDING
      */
     @BindView(R.id.generateAnamorphosis)
     Button mGenerateAnamorphosisButton;
@@ -60,9 +42,9 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
     @BindView(R.id.validVideoFP)
     ImageButton validVideo;
 
-    @BindView(R.id.layoutDrawingView)
-    LinearLayout layoutDrawingView;
-
+    /**
+     * INTERN STATE
+     */
 
     private Paint mPaint;
     private boolean didUserAlreadyDraw = false;
@@ -72,19 +54,17 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
     private List<Point> listPoints = new ArrayList<>();
 
     public int width;
-    public int height;
-    private boolean validCanvas;
+    public  int height;
     private Bitmap mBitmap;
     private Canvas mCanvas;
     private Path mPath;
-    private Paint mBitmapPaint;
+    private Paint   mBitmapPaint;
     Context context;
     private Paint circlePaint;
     private Path circlePath;
     private Uri uriData;
     private DrawingView dv;
-    public String fileManager;
-    public FFmpegMediaMetadataRetriever mediaMetadataRetriever;
+    private LinearLayout layoutDrawingView;
 
     @SuppressLint("NewApi")
     @Override
@@ -98,11 +78,13 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
 
         dv = new DrawingView(this);
-        dv.setBackgroundColor(getResources().getColor(R.color.white));
+        dv.setBackgroundColor(getColor(R.color.white));
 
+        layoutDrawingView = findViewById(R.id.layoutDrawingView);
         layoutDrawingView.addView(dv);
 
-        validCanvas=false;
+        // Setup drawing view
+
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         mPaint.setDither(true);
@@ -112,72 +94,55 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeWidth(10);
 
-        mSpinnerDirection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if (adapterView.getItemAtPosition(i).toString().equals("Custom")) {
-                    validVideo.setEnabled(true);
-                    validVideo.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
-
-                } else {
-                    validVideo.setEnabled(false);
-                    validVideo.setBackgroundColor(Color.GRAY);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-                System.out.println("nothing");
-            }
-        });
         validVideo.setOnClickListener(this);
-
-        validVideo.setEnabled(false);
-        validVideo.setBackgroundColor(Color.GRAY);
+        //cancelVideo.setOnClickListener(this);
     }
 
     /**
      * Method called when user clicks the generate button
      */
     @OnClick(R.id.generateAnamorphosis)
-    void generateAnamorphosis() {
-        Intent intentFinalRender = new Intent(this, FinalRenderActivity.class);
+    void generateAnamorphosis(){
+        Intent intentFinalRender = new Intent(this, Test_recup_frame.class);
         Bundle bundleArgs = new Bundle();
         bundleArgs.putString("uri_video", uriData.toString());
-        bundleArgs.putString("direction", mSpinnerDirection.getSelectedItem().toString());
-        if(mSpinnerDirection.getSelectedItem().toString().equals("Custom"))
-        {
-            bundleArgs.putSerializable("drawing", (Serializable) listPoints);
-        }
+        bundleArgs.putString("direction",mSpinnerDirection.getSelectedItem().toString());
         intentFinalRender.putExtras(bundleArgs);
         startActivity(intentFinalRender);
     }
 
+    /**
+     * Method to handle view clicks
+     * @param view
+     */
+
     @Override
     public void onClick(View view) {
-        switch (view.getId()) {
+        switch(view.getId()){
             case R.id.validVideoFP:
-                if(validCanvas == false) {
-                    validCanvas = true;
-                    Toast.makeText(TypeActivity.this, "Validated drawing", Toast.LENGTH_SHORT).show();
-                    validVideo.setImageDrawable(getDrawable(R.drawable.ic_lock_white_24dp));
-
-                }
-                else {
-                    validCanvas = false;
-                    Toast.makeText(TypeActivity.this, "Activated change", Toast.LENGTH_SHORT).show();
-                    validVideo.setImageDrawable(getDrawable(R.drawable.ic_lock_open_white_24dp));
-
-                }
+                Intent intentFinalRender = new Intent(this, Test_Multi_Thread.class);
+                Bundle bundleArgs = new Bundle();
+                bundleArgs.putString("uri_video", uriData.toString());
+                intentFinalRender.putExtras(bundleArgs);
+                startActivity(intentFinalRender);
                 break;
-
+            case R.id.cancelVideoFP:
+                tempDx = 0;
+                mCanvas = new Canvas();
+                listPoints = new ArrayList<>();
+                break;
         }
     }
 
+    /**
+     * Custom drawing view
+     */
+
     public class DrawingView extends View {
+
         public DrawingView(Context c) {
             super(c);
-            context = c;
+            context=c;
             mPath = new Path();
             mBitmapPaint = new Paint(Paint.DITHER_FLAG);
             circlePaint = new Paint();
@@ -192,8 +157,7 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         protected void onSizeChanged(int w, int h, int oldw, int oldh) {
             super.onSizeChanged(w, h, oldw, oldh);
-            width = w;
-            height = h;
+
             mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             mCanvas = new Canvas(mBitmap);
 
@@ -203,30 +167,27 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
 
-            canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
-            canvas.drawPath(mPath, mPaint);
-            canvas.drawPath(circlePath, circlePaint);
+            canvas.drawBitmap( mBitmap, 0, 0, mBitmapPaint);
+            canvas.drawPath( mPath,  mPaint);
+            canvas.drawPath( circlePath,  circlePaint);
 
         }
 
         private float mX, mY;
         private static final float TOUCH_TOLERANCE = 4;
 
-        private void touch_start(float x, float y) {
-            /*clean*/
-            mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            mCanvas = new Canvas(mBitmap);
-            mX = 0;
-            mY = 0;
-            tempDx = 0;
-            listPoints = new ArrayList<>();
+        /**
+         * Sub custom events - user interaction with canvas
+         * @param x
+         * @param y
+         */
 
+        private void touch_start(float x, float y) {
             mPath.reset();
             mPath.moveTo(x, y);
             mX = x;
             mY = y;
-            listPoints.add(new Point((int) x, (int) y));
-
+            listPoints.add(new Point((int)x, (int)y));
         }
 
         private void touch_move(float x, float y) {
@@ -234,18 +195,17 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
             float dy = Math.abs(y - mY);
             System.out.println("coords : " + dx + " : " + dy);
             System.out.println("coords : " + x + " : " + y);
-            if (tempDx < x) {
+            if(tempDx < x){
                 if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
-                    mPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2);
+                    mPath.quadTo(mX, mY, (x + mX)/2, (y + mY)/2);
                     mX = x;
                     mY = y;
                     circlePath.reset();
                     circlePath.addCircle(mX, mY, 30, Path.Direction.CW);
                     tempDx = x;
-                    listPoints.add(new Point((int) x, (int) y));
+                    listPoints.add(new Point((int)x, (int)y));
                 }
             }
-
 
         }
 
@@ -253,34 +213,47 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
             mPath.lineTo(mX, mY);
             circlePath.reset();
             // commit the path to our offscreen
-            mCanvas.drawPath(mPath, mPaint);
+            mCanvas.drawPath(mPath,  mPaint);
             // kill this so we don't double draw
             mPath.reset();
         }
+
+        /**
+         * Method to get user interaction events with the drawing canvas
+         * @param event
+         * @return
+         */
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
             float x = event.getX();
             float y = event.getY();
-            if (mSpinnerDirection.getSelectedItem().toString().equals("Custom") && validCanvas == false) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        touch_start(x, y);
-                        invalidate();
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        touch_move(x, y);
-                        invalidate();
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        touch_up();
-                        invalidate();
-                        break;
-                }
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    touch_start(x, y);
+                    invalidate();
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    touch_move(x, y);
+                    invalidate();
+                    break;
+                case MotionEvent.ACTION_UP:
+                    touch_up();
+                    invalidate();
+                    break;
             }
             return true;
         }
     }
 
+    /**
+     * Managing when user click the back button
+     */
 
+    @Override
+    public void onBackPressed() {
+        Intent intentMainActivity = new Intent(this, MainActivity.class);
+        startActivity(intentMainActivity);
+    }
 }
