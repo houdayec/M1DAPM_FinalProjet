@@ -720,8 +720,13 @@ public class Test_Multi_Thread extends AppCompatActivity {
                             indexRangePixels += sample;
 
                             if(interpolate) {
+                                mPixelBuf.rewind();
+                                GLES20.glReadPixels(0, 0, mWidth, mHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE,
+                                        mPixelBuf);
+                                mPixelBuf.rewind();
                                 float bmpCount = (float) (1.0 / interpolationSample);
                                 bmp2 = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+                                bmp2.copyPixelsFromBuffer(mPixelBuf);
                                 for (float i = bmpCount; i < 1; i += bmpCount) {
                                     if (bmp2 != null) {
                                         // Calcul d'une nouvelle image interpolée
@@ -733,9 +738,10 @@ public class Test_Multi_Thread extends AppCompatActivity {
                                     }
                                 }
                                 bmp2.recycle();
-                                bmp.recycle();
                             }
-                        //}
+                            bmp.recycle();
+
+            //}
           //          } catch (Exception e) {
             //            e.printStackTrace();
               //      }
