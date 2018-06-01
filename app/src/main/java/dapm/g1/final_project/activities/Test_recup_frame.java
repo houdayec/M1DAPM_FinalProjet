@@ -1,11 +1,9 @@
 package dapm.g1.final_project.activities;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
-import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
@@ -27,12 +25,10 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Surface;
 import android.widget.Button;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -41,16 +37,17 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dapm.g1.final_project.MainActivity;
+import dapm.g1.final_project.PPointF;
 import dapm.g1.final_project.PathUtil;
 import dapm.g1.final_project.R;
-import dapm.g1.final_project.VideoUtils;
-import wseemann.media.FFmpegMediaMetadataRetriever;
+import dapm.g1.final_project.myMediaExtractor;
 
 public class Test_recup_frame extends AppCompatActivity {
 
@@ -81,7 +78,6 @@ public class Test_recup_frame extends AppCompatActivity {
     private static String INPUT_FILE = "source.mp4";
     private static final int MAX_FRAMES = 100000000;       // stop extracting after this many
 
-    private HorizontalScrollView mHorizontalScrollView;
     static String direction = "Top";
     static int sample = 1;
     public static int indexRangePixels = 0;
@@ -101,11 +97,13 @@ public class Test_recup_frame extends AppCompatActivity {
 
     static boolean jumpFrame = false;
     static ArrayList<String> frameSelected = new ArrayList<>();
-
+    private static List<PPointF> listPointsPath;
 
     private int duration;
     int stackPixels;
-    int numberFrames;
+    int frameRate;
+
+
 
 
     @Override
@@ -117,27 +115,26 @@ public class Test_recup_frame extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         // Binding view
-
         ButterKnife.bind(this);
 
         // Getting data from previous activity
-
         direction = getIntent().getStringExtra("direction");
+        if(direction.equals("Custom")){
+            listPointsPath = ((List<PPointF>)getIntent().getSerializableExtra("drawing"));
+            Log.d(TAG, "size path : " + listPointsPath.size());
+        }
 
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
         fileManager = PathUtil.getPath(this, uriData);
 
         stackPixels = 1;
-        numberFrames = 1;
+        frameRate = 1;
 
         System.out.println(TAG + " with video path : " + fileManager.toString());
 
         INPUT_FILE = fileManager.toString();
 
-        mHorizontalScrollView = findViewById(R.id.horizontalScrollView);
-
         // Starting extraction
-
         new FramesExtraction().execute();
 
     }
@@ -202,7 +199,7 @@ public class Test_recup_frame extends AppCompatActivity {
 
             try {
                 extractMpegFrames(INPUT_FILE);
-            } catch (IOException e) {
+            } catch (IOException | myMediaExtractor.NoTrackSelectedException e) {
                 e.printStackTrace();
             }
 
@@ -246,10 +243,10 @@ public class Test_recup_frame extends AppCompatActivity {
          * it by adjusting the GL viewport to get letterboxing or pillarboxing, but generally if
          * you're extracting frames you don't want black bars.
          */
-        private void extractMpegFrames(String INPUT_FILE) throws IOException {
+        private void extractMpegFrames(String INPUT_FILE) throws IOException, myMediaExtractor.NoTrackSelectedException {
             MediaCodec decoder = null;
             Test_recup_frame.CodecOutputSurface outputSurface = null;
-            MediaExtractor extractor = null;
+            myMediaExtractor extractor = null;
             //int saveWidth = mWidth; //640;
             //  int saveHeight = mHeight;//480;
             //  Log.e("largeur ",String.valueOf(mWidth));
@@ -264,32 +261,30 @@ public class Test_recup_frame extends AppCompatActivity {
                     throw new FileNotFoundException("Unable to read " + inputFile);
                 }
 
-                extractor = new MediaExtractor();
-                extractor.setDataSource(inputFile.toString());
-                int trackIndex = selectTrack(extractor);
+                extractor = new myMediaExtractor(inputFile.toString());
+                int trackIndex = extractor.getTrackVideoIndex();
                 if (trackIndex < 0) {
                     throw new RuntimeException("No video track found in " + inputFile);
                 }
                 extractor.selectTrack(trackIndex);
 
-                MediaFormat format = extractor.getTrackFormat(trackIndex);
-
                 // Getting data from video source
-                mWidth = format.getInteger(MediaFormat.KEY_WIDTH);
-                mHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
+                mWidth = extractor.getVideoWidth();
+                mHeight = extractor.getVideoHeight();
+
                 if (direction.equals("Top") || direction.equals("Bottom"))
                     stackPixels = mHeight;
                 else if (direction.equals("Left") || direction.equals("Right"))
                     stackPixels = mWidth;
 
-                duration = (int) format.getLong(MediaFormat.KEY_DURATION) / 1000000;//micro-second
-                numberFrames = format.getInteger(MediaFormat.KEY_FRAME_RATE);
+                duration = (int) extractor.getVideoDuration() / 1000000; //micro-second
+                frameRate = extractor.getVideoFrameRate();
 
                 Log.e(TAG, "Video size is " + mWidth + "x" + mHeight);
-                Log.e(TAG, "Duration is " + duration);//micro
-                Log.e(TAG, "Frame rate is " + numberFrames);
+                Log.e(TAG, "Duration is " + duration);
+                Log.e(TAG, "Frame rate is " + frameRate);
 
-                sample = (int) ((stackPixels) / ((duration) * numberFrames));
+                sample = (int) ((stackPixels) / ((duration) * frameRate));
                 Log.e(TAG, "Sample is " + sample);
                 //Need to interpolate
                 if (sample >= 3 ) {
@@ -306,7 +301,7 @@ public class Test_recup_frame extends AppCompatActivity {
                     Log.e("Jump", "jump frame needed");
                     jumpFrame = true;
                     sample = 1;
-                    selectFrame(numberFrames, duration, stackPixels);
+                    selectFrame(frameRate, duration, stackPixels);
 
                 }
                 System.out.println("start scale " + sample);
@@ -317,9 +312,9 @@ public class Test_recup_frame extends AppCompatActivity {
                 // Create a MediaCodec decoder, and configure it with the MediaFormat from the
                 // extractor.  It's very important to use the format from the extractor because
                 // it contains a copy of the CSD-0/CSD-1 codec-specific data chunks.
-                String mime = format.getString(MediaFormat.KEY_MIME);
+                String mime = extractor.getVideoMine();
                 decoder = MediaCodec.createDecoderByType(mime);
-                decoder.configure(format, outputSurface.getSurface(), null, 0);
+                decoder.configure(extractor.getFormat(), outputSurface.getSurface(), null, 0);
                 decoder.start();
 
                 doExtract(extractor, trackIndex, decoder, outputSurface);
@@ -344,7 +339,7 @@ public class Test_recup_frame extends AppCompatActivity {
         /**
          * Work loop.
          */
-        void doExtract(MediaExtractor extractor, int trackIndex, MediaCodec decoder,
+        void doExtract(myMediaExtractor extractor, int trackIndex, MediaCodec decoder,
                        Test_recup_frame.CodecOutputSurface outputSurface) throws IOException {
             final int TIMEOUT_USEC = 10000;
             ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
@@ -440,26 +435,15 @@ public class Test_recup_frame extends AppCompatActivity {
                     (frameSaveTime / numSaved / 1000) + " us per frame");
         }
 
-        /**
-         * Selects the video track, if any.
-         *
-         * @return the track index, or -1 if no video track is found.
-         */
-        private int selectTrack(MediaExtractor extractor) {
-            // Select the first video track we find, ignore the rest.
-            int numTracks = extractor.getTrackCount();
-            for (int i = 0; i < numTracks; i++) {
-                MediaFormat format = extractor.getTrackFormat(i);
-                String mime = format.getString(MediaFormat.KEY_MIME);
-                if (mime.startsWith("video/")) {
-                    if (VERBOSE) {
-                        Log.d(TAG, "Extractor selected track " + i + " (" + mime + "): " + format);
-                    }
-                    return i;
-                }
-            }
-            return -1;
-        }
+    }
+
+    /**
+     * Method to create a custom anamorphosis
+     * @param currentBmp
+     * @param pixels
+     * @param index
+     */
+    public static void createCustomAnamorphosis(Bitmap currentBmp, int[] pixels, int index){
 
     }
 
