@@ -1,6 +1,8 @@
 package dapm.g1.final_project.activities;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.media.Image;
@@ -19,11 +21,14 @@ import android.opengl.Matrix;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Surface;
+import android.widget.Button;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -35,9 +40,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
+import java.util.Random;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
+import dapm.g1.final_project.MainActivity;
 import dapm.g1.final_project.PathUtil;
 import dapm.g1.final_project.R;
 import dapm.g1.final_project.VideoUtils;
@@ -45,9 +54,24 @@ import wseemann.media.FFmpegMediaMetadataRetriever;
 
 public class Test_recup_frame extends AppCompatActivity {
 
+    /**
+     * Binding view elements
+     */
+    @BindView(R.id.imageViewAnamorphosis)
+    ImageView mImageViewAnamorphosis;
+
+    @BindView(R.id.downloadAnamorphosisButton)
+    ImageButton mDownloadAnamorphosisButton;
+
+    @BindView(R.id.shareAnamorphosisButton)
+    ImageButton mShareAnamorphosisButton;
+
+    @BindView(R.id.backToMenuButton)
+    Button mBackToMenuButton;
+
     private Uri uriData;
     private String fileManager;
-    private static int cpt = 0;
+    static int idFrame = 0;
 
     private static final String TAG = "ExtractMpegFramesTest";
     private static final boolean VERBOSE = true;           // lots of logging
@@ -58,7 +82,6 @@ public class Test_recup_frame extends AppCompatActivity {
     private static final int MAX_FRAMES = 100000000;       // stop extracting after this many
 
     private HorizontalScrollView mHorizontalScrollView;
-    static int index = 0;
     static String direction = "Top";
     static int sample = 1;
     public static int indexRangePixels = 0;
@@ -69,20 +92,27 @@ public class Test_recup_frame extends AppCompatActivity {
 
     protected static Bitmap finalBmp;
     static Bitmap bmp;
-    public static int[] tableauuse;
+    static Bitmap bmp2 = null;
+    static Bitmap interpolatedBmp;
 
-    // Binding view
-    @BindView(R.id.imageViewAnamorphosis)
-    ImageView mImageViewAnamorphosis;
-    private FFmpegMediaMetadataRetriever mediaMetadataRetriever;
-    private String duration;
-    private int intervalRefresh;
+    // Interpolation vars
+    static boolean interpolate = false;
+    static int interpolationSample;
+
+    static boolean jumpFrame = false;
+    static ArrayList<String> frameSelected = new ArrayList<>();
+
+
+    private int duration;
+    int stackPixels;
+    int numberFrames;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_test__algo__mt);
+
+        setContentView(R.layout.activity_final_render);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -92,41 +122,13 @@ public class Test_recup_frame extends AppCompatActivity {
 
         // Getting data from previous activity
 
+        direction = getIntent().getStringExtra("direction");
+
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
         fileManager = PathUtil.getPath(this, uriData);
 
-        mediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
-        mediaMetadataRetriever.setDataSource(fileManager);
-
-        int numberFrames = VideoUtils.getFrameRateVideo(fileManager);
-        System.out.println("The video has a " + numberFrames + " frames / second");
-
-        // Retrieving first frame in order to set up settings
-
-        Bitmap bmFrame = mediaMetadataRetriever.getFrameAtTime(0, FFmpegMediaMetadataRetriever.OPTION_CLOSEST); //unit in microsecond
-        int stackPixels = 1;
-        if (direction.equals("Top") || direction.equals("Bottom"))
-            stackPixels = bmFrame.getHeight();
-        else if (direction.equals("Left") || direction.equals("Right"))
-            stackPixels = bmFrame.getWidth();
-        mWidth = bmFrame.getWidth();
-        mHeight = bmFrame.getHeight();
-        tableauuse = new int[mWidth * mHeight];
-        for (int i = 0; i < mWidth * mHeight; i++) {
-            tableauuse[i] = 0;
-        }
-        duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
-
-        System.out.println("current duration : " + (Integer.parseInt(duration)));
-
-        sample = stackPixels / ((Integer.parseInt(duration) / 1000) * numberFrames);
-        if (sample == 0)
-            sample = 1;
-        System.out.println("start scale " + sample);
-        Log.e("scale", String.valueOf(sample));
-        intervalRefresh = 1000000 / numberFrames;
-
-        duration = String.valueOf(Integer.valueOf(duration) * 1000);
+        stackPixels = 1;
+        numberFrames = 1;
 
         System.out.println(TAG + " with video path : " + fileManager.toString());
 
@@ -141,6 +143,55 @@ public class Test_recup_frame extends AppCompatActivity {
     }
 
     /**
+     * Allows the user to save a completed anamorphosis
+     * Butterknife OnClick methods
+     */
+
+    @OnClick(R.id.downloadAnamorphosisButton)
+    void downloadAnamorphosis() {
+        String storage = Environment.getExternalStorageDirectory().toString();
+        File fileRepo = new File(storage + "/saved_anamorphosis");
+        fileRepo.mkdirs();
+
+        // Genere un entier aleatoire pour la sauvegarde
+        Random fileId = new Random();
+        int n = 1;
+        n = fileId.nextInt();
+
+        String fileName = "Anamorphosis-" + n + ".jpg";
+        File newImg = new File(fileRepo, fileName);
+
+        try {
+            FileOutputStream fout = new FileOutputStream(newImg);
+            finalBmp.compress(Bitmap.CompressFormat.JPEG, 90, fout);
+            fout.flush();
+            fout.close();
+        } catch (Exception e) {
+            Log.e("Saving", "Saving anamophosis failed");
+        }
+        Toast.makeText(Test_recup_frame.this, "File saved:" + newImg.getAbsolutePath(), Toast.LENGTH_LONG).show();
+    }
+
+    @OnClick(R.id.shareAnamorphosisButton)
+    void shareAnamorphosis() {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("image/jpg");
+
+        String bitmapPath = MediaStore.Images.Media.insertImage(getContentResolver(), finalBmp, "sharedAnamorphosis", null);
+        Uri bitmapUri = Uri.parse(bitmapPath);
+
+        // Will show every communication app that can share the picture
+        intent.putExtra(Intent.EXTRA_STREAM, bitmapUri);
+        startActivity(Intent.createChooser(intent, "Share !"));
+    }
+
+    @OnClick(R.id.backToMenuButton)
+    void backToMenu() {
+        Intent goToMainMenuIntent = new Intent(this, MainActivity.class);
+        startActivity(goToMainMenuIntent);
+    }
+
+    /**
      * Inner class (Asynchronous task) to get all the frames from a video //TODO MICKAEL ALGO IMP ?
      */
     @SuppressLint("NewApi")
@@ -149,13 +200,11 @@ public class Test_recup_frame extends AppCompatActivity {
         @Override
         protected String doInBackground(String... params) {
 
-
             try {
                 extractMpegFrames(INPUT_FILE);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
 
             return "Done";
         }
@@ -170,9 +219,7 @@ public class Test_recup_frame extends AppCompatActivity {
 
             Log.e("onPostExecute", "reached");
 
-            Toast.makeText(getBaseContext(), "Traitement fini", Toast.LENGTH_SHORT).show();
-            for (int i = 0; i < mWidth * mHeight; i++)
-                System.out.println(tableauuse[i]);
+            Toast.makeText(Test_recup_frame.this, "Traitement fini", Toast.LENGTH_SHORT).show();
 
         }
 
@@ -203,10 +250,10 @@ public class Test_recup_frame extends AppCompatActivity {
             MediaCodec decoder = null;
             Test_recup_frame.CodecOutputSurface outputSurface = null;
             MediaExtractor extractor = null;
-            int saveWidth = mWidth; //640;
-            int saveHeight = mHeight;//480;
-            Log.e("largeur ", String.valueOf(mWidth));
-            Log.e("hauteur ", String.valueOf(mHeight));
+            //int saveWidth = mWidth; //640;
+            //  int saveHeight = mHeight;//480;
+            //  Log.e("largeur ",String.valueOf(mWidth));
+            //  Log.e("hauteur ",String.valueOf(mHeight));
 
             try {
                 File inputFile = new File(INPUT_FILE);   // must be an absolute path
@@ -227,17 +274,46 @@ public class Test_recup_frame extends AppCompatActivity {
 
                 MediaFormat format = extractor.getTrackFormat(trackIndex);
                 if (VERBOSE) {
-                    Log.d(TAG, "Video size is " + format.getInteger(MediaFormat.KEY_WIDTH) + "x" +
-                            format.getInteger(MediaFormat.KEY_HEIGHT));
-                    Log.d(TAG, "Duration is " + format.getLong(MediaFormat.KEY_DURATION));//micro
-                    Log.d(TAG, "Frame rate is " + format.getInteger(MediaFormat.KEY_FRAME_RATE));
-                    sample = format.getInteger(MediaFormat.KEY_HEIGHT) / ((Integer.parseInt(duration) / 1000000) * format.getInteger(MediaFormat.KEY_FRAME_RATE));
-                    //sample=1;
+
+                    mWidth = format.getInteger(MediaFormat.KEY_WIDTH);
+                    mHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
+                    if (direction.equals("Top") || direction.equals("Bottom"))
+                        stackPixels = mHeight;
+                    else if (direction.equals("Left") || direction.equals("Right"))
+                        stackPixels = mWidth;
+
+                    duration = (int) format.getLong(MediaFormat.KEY_DURATION) / 1000000;//micro-second
+                    numberFrames = format.getInteger(MediaFormat.KEY_FRAME_RATE);
+
+                    Log.e(TAG, "Video size is " + mWidth + "x" + mHeight);
+                    Log.e(TAG, "Duration is " + duration);//micro
+                    Log.e(TAG, "Frame rate is " + numberFrames);
+
+                    sample = (int) ((stackPixels) / ((duration) * numberFrames));
+                    Log.e(TAG, "Sample is " + sample);
+                    //Need to interpolate
+                    if (sample >= 3 ) {
+                        interpolate = true;
+                        // Nombre d'images a créer entre chaque images
+                        interpolationSample = sample -1 ;
+                        sample = 1;
+
+
+                        Log.e("Interpolate", "Interpolation needed");
+                    }
+                    //Need to jump frame
+                    else if (sample < 1) {
+                        Log.e("Jump", "jump frame needed");
+                        jumpFrame = true;
+                        sample = 1;
+                        selectFrame(numberFrames, duration, stackPixels);
+
+                    }
                     System.out.println("start scale " + sample);
                 }
 
                 // Could use width/height from the MediaFormat to get full-size frames.
-                outputSurface = new Test_recup_frame.CodecOutputSurface(saveWidth, saveHeight);
+                outputSurface = new Test_recup_frame.CodecOutputSurface(mWidth, mHeight);
 
                 // Create a MediaCodec decoder, and configure it with the MediaFormat from the
                 // extractor.  It's very important to use the format from the extractor because
@@ -396,24 +472,17 @@ public class Test_recup_frame extends AppCompatActivity {
      * @param index
      */
     public static void createAnamorphosis(Bitmap currentBmp, int[] pixels, int index) {
-        int height = currentBmp.getHeight();
-        int width = currentBmp.getWidth();
+        int height = mHeight;//currentBmp.getHeight();
+        int width =mWidth ; //currentBmp.getWidth();
         int currentPixel[] = new int[height * width];
         currentBmp.getPixels(currentPixel, 0, width, 0, 0, width, height);
         switch (direction) {
             case "Top":
                 if (index < height) {
-                    cpt++;
-                    //       Log.e("compteur",String.valueOf(cpt));
-                    //     Log.e("index", String.valueOf(index));
-                    //   Log.e("width", String.valueOf(width));
                     for (int j = 0; j < sample * width; j++) {
                         if ((index * width) + j < width * height) {
                             pixels[index * width + j] = currentPixel[index * width + j];
-                            tableauuse[index * width + j] += 1;
                         }
-
-                        //  Log.e("tableau", String.valueOf(index*width+j));
                     }
                 }
                 break;
@@ -686,33 +755,64 @@ public class Test_recup_frame extends AppCompatActivity {
         /**
          * Saves the current frame to disk as a PNG image.
          */
+
         public void saveFrame() throws IOException {
+            idFrame++;
             mPixelBuf.rewind();
             GLES20.glReadPixels(0, 0, mWidth, mHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE,
                     mPixelBuf);
             mPixelBuf.rewind();
 
-
-          /*  Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        while(true) {*/
+           /* Thread thread = new Thread() {
+             @Override
+             public void run() {
+               try {
+                 while(true) {*/
             bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
             bmp.copyPixelsFromBuffer(mPixelBuf);
-            createAnamorphosis(bmp, finalPixels, indexRangePixels);
-            bmp.recycle();
-            indexRangePixels += sample;
-                     /*   }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            if (jumpFrame) {
+                if (frameSelected.contains(String.valueOf(idFrame))) {
+                    createAnamorphosis(bmp, finalPixels, indexRangePixels);
+                    indexRangePixels += sample;
                 }
+            } else {
+                if (interpolate && bmp2 != null) {
+                    Log.e("Interpolate", "interpolate");
+                    float bmpCount = (float) (1.0 / interpolationSample);
+                    Log.e("InterpolateSample", String.valueOf(interpolationSample));
+                    Log.e("Interpolate bmp count", String.valueOf(bmpCount));
+                    idFrame++;
+
+                    for (float i = bmpCount; i <= 1; i += bmpCount) {
+                        if (bmp2 != null) {
+                            // Calcul d'une nouvelle image interpolée
+                            interpolatedBmp = FinalRenderActivity.bitmapInterpolation(bmp2, bmp, i, sample, indexRangePixels);
+
+                            createAnamorphosis(interpolatedBmp, finalPixels, indexRangePixels);
+                            indexRangePixels += sample;
+                            interpolatedBmp.recycle();
+                        }
+                    }
+                    bmp2.recycle();
+                }
+                createAnamorphosis(bmp, finalPixels, indexRangePixels);
+                indexRangePixels += sample;
+
+             bmp2 = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+             bmp2.createBitmap(bmp);
+            }
+            bmp.recycle();
+          /*  }
+                      } catch (Exception e) {
+                        e.printStackTrace();
+                  }
+            }
             };
 
             thread.start();*/
 
-            System.out.println("frame " + index++);
+
+            System.out.println("frame " + idFrame);
 
         }
 
@@ -943,6 +1043,34 @@ public class Test_recup_frame extends AppCompatActivity {
             if (location < 0) {
                 throw new RuntimeException("Unable to locate '" + label + "' in program");
             }
+        }
+    }
+
+
+    public void selectFrame(int fps, int duration, int size) {
+        Log.e("ici duration", String.valueOf(duration));
+        int nbFrame = fps * duration;
+        float step = nbFrame / size;
+        Log.e("ici  nbFrame", String.valueOf(nbFrame));
+        Log.e("ici step", String.valueOf(step));
+        int vEntiere = (int) step;
+        float vReste = (size * (step - vEntiere)) / nbFrame;
+        int vEcompteur = vEntiere;
+        float vRcompteur = vReste;
+        for (int i = 0; i < nbFrame; i++) {
+            if (vRcompteur >= 1) {
+                vEcompteur += (int) vRcompteur;
+                vRcompteur = vRcompteur - (int) vRcompteur;
+            }
+            if (vEcompteur == 1) {
+                //traitement/
+                frameSelected.add(String.valueOf(i));
+                Log.e("ici", String.valueOf(i));
+                vEcompteur = vEntiere;
+            } else {
+                vEcompteur--;
+            }
+            vRcompteur += vReste;
         }
     }
 
