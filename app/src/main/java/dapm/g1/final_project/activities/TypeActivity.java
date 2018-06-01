@@ -141,7 +141,7 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
      */
     @OnClick(R.id.generateAnamorphosis)
     void generateAnamorphosis() {
-        Intent intentFinalRender = new Intent(this, Test_Multi_Thread.class);
+        Intent intentFinalRender = new Intent(this, Test_recup_frame.class);
         Bundle bundleArgs = new Bundle();
         bundleArgs.putString("uri_video", uriData.toString());
         bundleArgs.putString("direction", mSpinnerDirection.getSelectedItem().toString());
@@ -160,13 +160,13 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
                 if(validCanvas == false) {
                     validCanvas = true;
                     Toast.makeText(TypeActivity.this, "Validated drawing", Toast.LENGTH_SHORT).show();
-                    validVideo.setImageDrawable(getDrawable(R.drawable.ic_lock_white_24dp));
+                    validVideo.setImageDrawable(getResources().getDrawable(R.drawable.ic_lock_white_24dp));
 
                 }
                 else {
                     validCanvas = false;
                     Toast.makeText(TypeActivity.this, "Activated change", Toast.LENGTH_SHORT).show();
-                    validVideo.setImageDrawable(getDrawable(R.drawable.ic_lock_open_white_24dp));
+                    validVideo.setImageDrawable(getResources().getDrawable(R.drawable.ic_lock_open_white_24dp));
 
                 }
                 break;
