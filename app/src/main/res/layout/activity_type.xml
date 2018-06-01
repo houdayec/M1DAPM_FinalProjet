@@ -75,13 +75,15 @@
                     android:layout_gravity="center"
                     android:gravity="center">
 
-                    <ImageButton
-                        android:id="@+id/validVideoFP"
+                    <ToggleButton
+                        android:id="@+id/validCustom"
                         android:layout_width="64dp"
                         android:layout_height="64dp"
-                        android:src="@drawable/ic_lock_open_white_24dp"
-                        android:background="@color/colorPrimary"
-                        android:layout_margin="10dp"/>
+                        android:layout_margin="10dp"
+                        android:background="@drawable/ic_lock"
+                        android:textColorLink="@android:color/transparent"
+                        android:textOff=""
+                        android:textOn="" />
 
 
                 </LinearLayout>

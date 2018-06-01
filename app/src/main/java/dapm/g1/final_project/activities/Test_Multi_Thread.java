@@ -730,7 +730,7 @@ public class Test_Multi_Thread extends AppCompatActivity {
                                 for (float i = bmpCount; i < 1; i += bmpCount) {
                                     if (bmp2 != null) {
                                         // Calcul d'une nouvelle image interpolée
-                                        //interpolatedBmp = FinalRenderActivity.bitmapInterpolation(bmp, bmp2, i);
+                                        //interpolatedBmp = Old_FinalRenderActivity.bitmapInterpolation(bmp, bmp2, i);
 
                                         createAnamorphosis(interpolatedBmp, finalPixels, indexRangePixels);
                                         indexRangePixels += sample;
