@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -25,11 +26,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -45,9 +48,10 @@ import dapm.g1.final_project.CustomView.DrawingView;
 import dapm.g1.final_project.PathUtil;
 import dapm.g1.final_project.R;
 import dapm.g1.final_project.VideoUtils;
+import dapm.g1.final_project.myMediaExtractor;
 import wseemann.media.FFmpegMediaMetadataRetriever;
 
-public class TypeActivity extends AppCompatActivity implements View.OnClickListener {
+public class TypeActivity extends AppCompatActivity {
 
     /**
      * INTERN VARIABLES
@@ -58,34 +62,14 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
     @BindView((R.id.spinner))
     Spinner mSpinnerDirection;
 
-    @BindView(R.id.validVideoFP)
-    ImageButton validVideo;
+    @BindView(R.id.validCustom)
+    ToggleButton validCustom;
 
     @BindView(R.id.layoutDrawingView)
     LinearLayout layoutDrawingView;
 
-
-    private Paint mPaint;
-    private boolean didUserAlreadyDraw = false;
-
-    float tempDx, tempDy = 0;
-
-    private List<Point> listPoints = new ArrayList<>();
-
-    public int width;
-    public int height;
-    private boolean validCanvas;
-    private Bitmap mBitmap;
-    private Canvas mCanvas;
-    private Path mPath;
-    private Paint mBitmapPaint;
-    Context context;
-    private Paint circlePaint;
-    private Path circlePath;
     private Uri uriData;
     private DrawingView dv;
-    public String fileManager;
-    public FFmpegMediaMetadataRetriever mediaMetadataRetriever;
 
     @SuppressLint("NewApi")
     @Override
@@ -98,33 +82,49 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
 
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
 
-        dv = new DrawingView(this);
-        dv.setBackgroundColor(getResources().getColor(R.color.white));
+        try {
+            myMediaExtractor mediaExtractor = new myMediaExtractor(PathUtil.getPath(this, uriData));
+            mediaExtractor.selectTrack(mediaExtractor.getTrackVideoIndex());
+            dv = new DrawingView(this,(int)Math.ceil(mediaExtractor.getVideoFrameRate()*(mediaExtractor.getVideoDuration()/1000000f)));
+            dv.setBackgroundColor(getResources().getColor(R.color.white));
 
-        layoutDrawingView.addView(dv);
+            layoutDrawingView.addView(dv);
+        } catch (IOException | myMediaExtractor.NoTrackSelectedException e) {
+            finish();
+        }
+
+
 
         mSpinnerDirection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 if (adapterView.getItemAtPosition(i).toString().equals("Custom")) {
-                    validVideo.setEnabled(true);
-                    validVideo.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
-
+                    validCustom.setChecked(true);
+                    validCustom.setEnabled(true);
                 } else {
-                    validVideo.setEnabled(false);
-                    validVideo.setBackgroundColor(Color.GRAY);
+                    validCustom.setChecked(false);
+                    validCustom.setEnabled(false);
                 }
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
-                System.out.println("nothing");
+                Toast.makeText(TypeActivity.this, "Please select a direction", Toast.LENGTH_SHORT).show();
             }
         });
-        validVideo.setOnClickListener(this);
-
-        validVideo.setEnabled(false);
-        validVideo.setBackgroundColor(Color.GRAY);
+        validCustom.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                dv.setEventEnabled(b);
+                if (b) {
+                    Toast.makeText(TypeActivity.this, "Activated change", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(TypeActivity.this, "Validated drawing", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        validCustom.setChecked(false);
+        validCustom.setEnabled(false);
     }
 
     /**
@@ -132,37 +132,22 @@ public class TypeActivity extends AppCompatActivity implements View.OnClickListe
      */
     @OnClick(R.id.generateAnamorphosis)
     void generateAnamorphosis() {
-        Intent intentFinalRender = new Intent(this, Test_recup_frame.class);
+        Intent intentFinalRender = new Intent(this,Test_Multi_Thread.class);
         Bundle bundleArgs = new Bundle();
-        bundleArgs.putString("uri_video", uriData.toString());
-        bundleArgs.putString("direction", mSpinnerDirection.getSelectedItem().toString());
         if(mSpinnerDirection.getSelectedItem().toString().equals("Custom"))
         {
-            bundleArgs.putSerializable("drawing", (Serializable) listPoints);
+            Serializable spath = dv.getPath();
+            if (!validCustom.isChecked() && spath!=null)
+                bundleArgs.putSerializable("drawing", spath);
+            else {
+                Toast.makeText(TypeActivity.this, "Please valid your drawing", Toast.LENGTH_SHORT).show();
+                return;
+            }
         }
+        bundleArgs.putString("uri_video", uriData.toString());
+        bundleArgs.putString("direction", mSpinnerDirection.getSelectedItem().toString());
         intentFinalRender.putExtras(bundleArgs);
+        System.out.println("started custom anamorphosis");
         startActivity(intentFinalRender);
     }
-
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.validVideoFP:
-                if(validCanvas == false) {
-                    validCanvas = true;
-                    Toast.makeText(TypeActivity.this, "Validated drawing", Toast.LENGTH_SHORT).show();
-                    validVideo.setImageDrawable(getResources().getDrawable(R.drawable.ic_lock_white_24dp));
-
-                }
-                else {
-                    validCanvas = false;
-                    Toast.makeText(TypeActivity.this, "Activated change", Toast.LENGTH_SHORT).show();
-                    validVideo.setImageDrawable(getResources().getDrawable(R.drawable.ic_lock_open_white_24dp));
-
-                }
-                break;
-
-        }
-    }
-
 }
