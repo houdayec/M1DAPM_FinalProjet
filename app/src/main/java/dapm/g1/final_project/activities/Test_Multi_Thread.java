@@ -69,7 +69,13 @@ public class Test_Multi_Thread extends AppCompatActivity {
 
     protected static Bitmap finalBmp;
     static Bitmap bmp;
+    static Bitmap bmp2;
+    static Bitmap interpolatedBmp;
     public static int[] tableauuse;
+
+    // Interpolation vars
+    static boolean interpolate = false;
+    static int interpolationSample;
 
     // Binding view
     @BindView(R.id.imageViewAnamorphosis)
@@ -121,8 +127,18 @@ public class Test_Multi_Thread extends AppCompatActivity {
         System.out.println("current duration : " + (Integer.parseInt(duration)));
 
         sample = stackPixels/((Integer.parseInt(duration)/1000)*numberFrames);
-        if(sample == 0)
+        /*if(sample == 0)
             sample = 1;
+        */
+        // test if we need to interpolate
+        if(sample >= 4){
+            interpolate = true;
+            sample = 4;
+            // Nombre d'images a créer entre chaque images
+            interpolationSample = stackPixels/((Integer.parseInt(duration)/1000)*numberFrames*4) - 1;
+            Log.e("Interpolate", "Interpolation needed");
+        }
+
         System.out.println("start scale "+ sample);
         Log.e("scale",String.valueOf(sample));
         intervalRefresh = 1000000/numberFrames;
@@ -692,24 +708,47 @@ public class Test_Multi_Thread extends AppCompatActivity {
                     mPixelBuf);
             mPixelBuf.rewind();
 
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        while(true) {
+            //Thread thread = new Thread() {
+               // @Override
+               // public void run() {
+                 //   try {
+                   //     while(true) {
                             bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
                             bmp.copyPixelsFromBuffer(mPixelBuf);
-                            createAnamorphosis(bmp,finalPixels,indexRangePixels);
-                            bmp.recycle();
-                            indexRangePixels += sample;
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            };
 
-            thread.start();
+                            createAnamorphosis(bmp,finalPixels,indexRangePixels);
+                            indexRangePixels += sample;
+
+                            if(interpolate) {
+                                mPixelBuf.rewind();
+                                GLES20.glReadPixels(0, 0, mWidth, mHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE,
+                                        mPixelBuf);
+                                mPixelBuf.rewind();
+                                float bmpCount = (float) (1.0 / interpolationSample);
+                                bmp2 = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+                                bmp2.copyPixelsFromBuffer(mPixelBuf);
+                                for (float i = bmpCount; i < 1; i += bmpCount) {
+                                    if (bmp2 != null) {
+                                        // Calcul d'une nouvelle image interpolée
+                                        //interpolatedBmp = Old_FinalRenderActivity.bitmapInterpolation(bmp, bmp2, i);
+
+                                        createAnamorphosis(interpolatedBmp, finalPixels, indexRangePixels);
+                                        indexRangePixels += sample;
+                                        interpolatedBmp.recycle();
+                                    }
+                                }
+                                bmp2.recycle();
+                            }
+                            bmp.recycle();
+
+            //}
+          //          } catch (Exception e) {
+            //            e.printStackTrace();
+              //      }
+                //}
+            //};
+
+            //thread.start();
 
 
             System.out.println("frame " + index++);

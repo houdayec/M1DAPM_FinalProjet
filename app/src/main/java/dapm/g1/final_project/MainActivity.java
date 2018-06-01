@@ -1,15 +1,10 @@
 package dapm.g1.final_project;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.media.MediaExtractor;
-import android.media.MediaFormat;
 import android.net.Uri;
-import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -17,17 +12,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.Toast;
-
-import java.io.IOException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import dapm.g1.final_project.activities.FinalRenderActivity;
 import dapm.g1.final_project.activities.PreviewVideoActivity;
-import dapm.g1.final_project.activities.RecordVideoActivity;
 import dapm.g1.final_project.activities.TypeActivity;
 import wseemann.media.FFmpegMediaMetadataRetriever;
 
