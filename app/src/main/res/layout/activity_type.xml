@@ -51,58 +51,40 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:gravity="center"
             android:orientation="vertical">
 
             <LinearLayout
                 android:id="@+id/layoutDrawingView"
-                android:layout_width="250dp"
-                android:layout_height="250dp"
-                android:orientation="vertical"
-                android:layout_gravity="center"
-                android:gravity="center">
-
-            </LinearLayout>
-
-            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:gravity="center"
                 android:orientation="vertical">
 
-                <LinearLayout
-                    android:orientation="horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="80dp"
-                    android:layout_gravity="center"
-                    android:gravity="center">
-
-                    <ToggleButton
-                        android:id="@+id/validCustom"
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:layout_margin="10dp"
-                        android:background="@drawable/ic_lock"
-                        android:textColorLink="@android:color/transparent"
-                        android:textOff=""
-                        android:textOn="" />
-
-
-                </LinearLayout>
-
-                <Button
-                    android:id="@+id/generateAnamorphosis"
-                    android:layout_width="200dp"
-                    android:layout_height="80dp"
-                    android:layout_gravity="center"
-                    android:gravity="center"
-                    android:text="Generate"
-                    android:backgroundTint="@color/colorValid"
-                    android:textColor="@color/white"
-                    android:drawableLeft="@drawable/background_radius_valid_button"
-                    android:layout_margin="20dp"
-                    android:layout_marginLeft="20dp"
-                    android:layout_marginRight="20dp"/>
-
             </LinearLayout>
+
+            <ToggleButton
+                android:id="@+id/validCustom"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                android:background="@drawable/ic_lock"
+                android:textColorLink="@android:color/transparent"
+                android:textOff=""
+                android:textOn="" />
+
+            <Button
+                android:id="@+id/generateAnamorphosis"
+                android:layout_width="150dp"
+                android:layout_height="60dp"
+                android:layout_gravity="center"
+                android:backgroundTint="@color/colorValid"
+                android:drawableLeft="@drawable/background_radius_valid_button"
+                android:gravity="center"
+                android:text="Generate"
+                android:textColor="@color/white" />
 
         </LinearLayout>
 

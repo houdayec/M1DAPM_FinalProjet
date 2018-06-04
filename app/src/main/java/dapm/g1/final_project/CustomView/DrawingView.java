@@ -14,6 +14,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import dapm.g1.final_project.Line;
 import dapm.g1.final_project.PPointF;
 
 /**
@@ -24,6 +25,8 @@ public class DrawingView extends View {
 
     private int width;
     private int height;
+    private int realWidth;
+    private int realHeight;
     private Bitmap mBitmap;
     private Paint mBitmapPaint;
     private Canvas mCanvas;
@@ -56,8 +59,10 @@ public class DrawingView extends View {
 
     private int step;
 
-    public DrawingView(Context c,int step) {
+    public DrawingView(Context c,int step,int rw,int rh) {
         super(c);
+        realHeight = rh;
+        realWidth = rw;
         eventEnabled = false;
         listPoints = new ArrayList<>();
         mBitmapPaint = new Paint(Paint.DITHER_FLAG);
@@ -74,7 +79,7 @@ public class DrawingView extends View {
         this.step = step;
     }
 
-    private Paint customPaint(int color, int strokeWidth) {
+    public static Paint customPaint(int color, int strokeWidth) {
         Paint paint = new Paint();
         paint.setAntiAlias(true);
         paint.setDither(true);
@@ -89,7 +94,7 @@ public class DrawingView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        System.out.println("size changed");
+        System.out.println("size changed "+w+" "+h+" "+oldw+" "+oldh);
         width = w;
         height = h;
         frame = new PPointF[]{
@@ -283,16 +288,18 @@ public class DrawingView extends View {
         if (listPoints.size()>0) {
             System.out.println("init bezier");
             mPath.reset();
+            float ratioWidthHomothetie = (float)realWidth/width;
+            float ratioHeightHomothetie = (float)realHeight/height;
             List<PPointF> B = new ArrayList<>();
             int n = listPoints.size()-1;
             float precision = 1f/step;
             if (n>0) {
                 System.out.println("precision "+precision+" n "+n);
                 float u = 0.0f;
-                while (u <= 1f-precision) {
+                while (u <= 1f) {
                     float x = 0.0f;
                     float y = 0.0f;
-                    for(int i=0;i<n+1;i++){
+                    for(int i=0;i<n+1;i++) {
                         double b = (((factorialOf(n))/((factorialOf(i))*(factorialOf(n-i))))*(Math.pow(u,i))*(Math.pow((1-u),(n-i))));
                         PPointF p = listPoints.get(i);
                         x = (float)(x + b * p.x);
@@ -300,7 +307,7 @@ public class DrawingView extends View {
                     }
                     if(B.size()==0) mPath.moveTo(x,y);
                     else mPath.lineTo(x,y);
-                    B.add(new PPointF(x, y));
+                    B.add(new PPointF(x*ratioWidthHomothetie, y*ratioHeightHomothetie));
                     u += precision;
                 }
             }
@@ -309,8 +316,8 @@ public class DrawingView extends View {
         return null;
     }
 
-    private long factorialOf(int n) {
-        long factorial = 1;
+    private double factorialOf(int n) {
+        double factorial = 1f;
         for (int i = 1; i <= n; i++) {
             factorial *= i;
         }
@@ -332,11 +339,13 @@ public class DrawingView extends View {
                 if (startcap == 4 || startcap == 8) {
                     diagbase[0].set(0, height);
                     diagbase[1].set(width, 0);
+                    System.out.println(diagbase[0]+" "+diagbase[1]);
                     refreshDiag(p, true);
                 }
                 else if (startcap == 5 || startcap == 7) {
                     diagbase[0].set(0, 0);
                     diagbase[1].set(width, height);
+                    System.out.println(diagbase[0]+" "+diagbase[1]);
                     refreshDiag(p, false);
                 }
             }
@@ -354,6 +363,7 @@ public class DrawingView extends View {
     }
 
     private boolean acceptPoint(PPointF p) {
+        System.out.println(p);
         if (listPoints.size() == 0)
             return true;
         PPointF lastP = listPoints.get(listPoints.size()-1);
@@ -384,20 +394,14 @@ public class DrawingView extends View {
         return false;
     }
 
-    private float calcX(float y, float a, float b, float at) {
-        return a + ((y - b) / at);
-    }
-
-    private float calcY(float x,float a,float b,float at) {
-        return at * (x - a) + b;
-    }
-
     private void refreshDiag(PPointF p,boolean invert){
-        float at = height/width;
+        System.out.println("refresh Diag :"+p+" "+invert);
+        float at = (float)height/width;
+        System.out.println(at);
         if (invert)
             at*=-1;
-        float xdiff = p.x-calcX(p.y,0, diagbase[0].y,at);
-        float ydiff = p.y-calcY(p.x,0, diagbase[0].y,at);
+        float xdiff = p.x-Line.calcX(p.y,0, diagbase[0].y,at);
+        float ydiff = p.y-Line.calcY(p.x,0, diagbase[0].y,at);
         if (xdiff<0) {
             diagtemp[0].x = diagbase[0].x;
             diagtemp[0].y = diagbase[0].y + ydiff;
@@ -410,6 +414,7 @@ public class DrawingView extends View {
             diagtemp[1].x = diagbase[1].x;
             diagtemp[1].y = diagbase[1].y + ydiff;
         }
+        System.out.println(diagtemp[0]+" "+diagtemp[1]);
     }
 
     private void refreshCursorCap(PPointF p) {
@@ -423,7 +428,7 @@ public class DrawingView extends View {
             mCursorPath.lineTo(p.x,height);
         }
         else if (startcap==5 || startcap==7 || startcap==4 || startcap==8){
-            mCursorPath.moveTo(diagtemp[0].x, diagtemp[0].y);
+            mCursorPath.moveTo(diagtemp[0].x,diagtemp[0].y);
             mCursorPath.lineTo(diagtemp[1].x,diagtemp[1].y);
         }
     }
@@ -437,6 +442,14 @@ public class DrawingView extends View {
         System.out.println(path.size());
         if (path.size()==0) return null;
         return (Serializable) path;
+    }
+
+    public int getStartcap() {
+        return startcap;
+    }
+
+    public int getEndcap() {
+        return endcap;
     }
 
     public boolean isEventEnabled() {

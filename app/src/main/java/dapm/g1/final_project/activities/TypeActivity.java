@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -59,15 +60,15 @@ public class TypeActivity extends AppCompatActivity {
         try {
             myMediaExtractor mediaExtractor = new myMediaExtractor(PathUtil.getPath(this, uriData));
             mediaExtractor.selectTrack(mediaExtractor.getTrackVideoIndex());
-            dv = new DrawingView(this,(int)Math.ceil(mediaExtractor.getVideoFrameRate()*(mediaExtractor.getVideoDuration()/1000000f)));
+            int w = mediaExtractor.getVideoWidth();
+            int h = mediaExtractor.getVideoHeight();
+            System.out.println("video size w:"+w+" h:"+h);
+            dv = new DrawingView(this,(int)Math.ceil(mediaExtractor.getVideoFrameRate()*(mediaExtractor.getVideoDuration()/1000000f)),w,h);
             dv.setBackgroundColor(getResources().getColor(R.color.white));
-
             layoutDrawingView.addView(dv);
         } catch (IOException | myMediaExtractor.NoTrackSelectedException e) {
             finish();
         }
-
-
 
         mSpinnerDirection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -111,8 +112,9 @@ public class TypeActivity extends AppCompatActivity {
         if(mSpinnerDirection.getSelectedItem().toString().equals("Custom"))
         {
             Serializable spath = dv.getPath();
-            if (!validCustom.isChecked() && spath!=null)
+            if (!validCustom.isChecked() && spath!=null) {
                 bundleArgs.putSerializable("drawing", spath);
+            }
             else {
                 Toast.makeText(TypeActivity.this, "Please valid your drawing", Toast.LENGTH_SHORT).show();
                 return;
@@ -121,7 +123,6 @@ public class TypeActivity extends AppCompatActivity {
         bundleArgs.putString("uri_video", uriData.toString());
         bundleArgs.putString("direction", mSpinnerDirection.getSelectedItem().toString());
         intentFinalRender.putExtras(bundleArgs);
-        System.out.println("started custom anamorphosis");
         startActivity(intentFinalRender);
     }
 }

@@ -13,12 +13,13 @@
         android:orientation="vertical"
         android:gravity="center">
 
-    <ImageView
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:id="@+id/imageViewAnamorphosis"/>
+        <ImageView
+            android:id="@+id/imageViewAnamorphosis"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
 
-    <LinearLayout
+        <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"

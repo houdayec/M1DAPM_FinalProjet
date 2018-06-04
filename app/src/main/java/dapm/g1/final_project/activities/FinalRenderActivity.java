@@ -3,6 +3,11 @@ package dapm.g1.final_project.activities;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
@@ -42,6 +47,8 @@ import java.util.Random;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import dapm.g1.final_project.CustomView.DrawingView;
+import dapm.g1.final_project.Line;
 import dapm.g1.final_project.MainActivity;
 import dapm.g1.final_project.PPointF;
 import dapm.g1.final_project.PathUtil;
@@ -65,12 +72,13 @@ public class FinalRenderActivity extends AppCompatActivity {
     @BindView(R.id.backToMenuButton)
     Button mBackToMenuButton;
 
+    private static final float ZERO = 1e-15f;
     private Uri uriData;
     private String fileManager;
     static int idFrame = 0;
 
     private static final String TAG = "ExtractMpegFramesTest";
-    private static final boolean VERBOSE = true;           // lots of logging
+    private static final boolean VERBOSE = false;           // lots of logging
 
     // where to find files (note: requires WRITE_EXTERNAL_STORAGE permission)
     private static final File FILES_DIR = Environment.getExternalStorageDirectory();
@@ -86,6 +94,7 @@ public class FinalRenderActivity extends AppCompatActivity {
     static int mHeight;
 
     protected static Bitmap finalBmp;
+    protected static Canvas canvas;
     static Bitmap bmp;
     static Bitmap bmp2 = null;
     static Bitmap interpolatedBmp;
@@ -96,14 +105,20 @@ public class FinalRenderActivity extends AppCompatActivity {
 
     static boolean jumpFrame = false;
     static ArrayList<String> frameSelected = new ArrayList<>();
-    private static List<PPointF> listPointsPath;
+
+    private static PPointF[] tabPointsPath;
+    private static Path pointsPath;
+    private static Paint pointsPaint = DrawingView.customPaint(Color.GREEN,5);
+    private static Path tangentesPath;
+    private static Paint tangentesPaint = DrawingView.customPaint(Color.rgb(255,0,150),5);
+    private static Path selectPath;
+    private static Paint selectPaint = DrawingView.customPaint(Color.rgb(255,200,0),1);
+    private static int cursor;
+    private static Line saveLine;
 
     private int duration;
     int stackPixels;
     int frameRate;
-
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,8 +134,15 @@ public class FinalRenderActivity extends AppCompatActivity {
         // Getting data from previous activity
         direction = getIntent().getStringExtra("direction");
         if(direction.equals("Custom")){
-            listPointsPath = ((List<PPointF>)getIntent().getSerializableExtra("drawing"));
-            Log.d(TAG, "size path : " + listPointsPath.size());
+            List<PointF> lpoints = (List<PointF>)getIntent().getSerializableExtra("drawing");
+            if (lpoints.size()==0) finish();
+            tabPointsPath = new PPointF[lpoints.size()];
+            for (int i = 0;i<lpoints.size();i++) {
+                tabPointsPath[i] = new PPointF(lpoints.get(i));
+            }
+            cursor = 0;
+            saveLine = null;
+            Log.d(TAG, "size path : " + tabPointsPath.length);
         }
 
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
@@ -138,7 +160,6 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         // Starting extraction
         new FramesExtraction().execute();
-
     }
 
     /**
@@ -191,7 +212,7 @@ public class FinalRenderActivity extends AppCompatActivity {
     }
 
     /**
-     * Inner class (Asynchronous task) to get all the frames from a video //TODO MICKAEL ALGO IMP ?
+     * Inner class (Asynchronous task) to get all the frames from a video
      */
     @SuppressLint("NewApi")
     private class FramesExtraction extends AsyncTask<String, int[], String> {
@@ -214,6 +235,16 @@ public class FinalRenderActivity extends AppCompatActivity {
 
             //mProgressDialog.dismiss();
             //finalBmp.setPixels(finalPixels, 0, mWidth, 0, 0,mWidth, mHeight);
+            /*canvas = new Canvas(finalBmp);
+            canvas.drawColor(Color.WHITE);
+            Path p = new Path();
+            PointF pt = listPointsPath.get(0);
+            p.moveTo(pt.x,pt.y);
+            for (int i = 1; i < listPointsPath.size(); i++) {
+                pt = listPointsPath.get(i);
+                p.lineTo(pt.x,pt.y);
+            }
+            canvas.drawPath(p, DrawingView.customPaint(Color.GREEN,5));*/
             mImageViewAnamorphosis.setImageBitmap(finalBmp);
 
             Log.e("onPostExecute", "reached");
@@ -229,7 +260,17 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(int[]... pixels) {
-            finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0, mWidth, mHeight);
+            //finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0, mWidth, mHeight);
+            if (direction.equals("Custom")) {
+                canvas = new Canvas(finalBmp);
+                canvas.drawColor(Color.WHITE);
+                canvas.drawPath(selectPath, selectPaint);
+                canvas.drawPath(tangentesPath, tangentesPaint);
+                canvas.drawPath(pointsPath, pointsPaint);
+            }
+            else {
+                finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0, mWidth, mHeight);
+            }
             mImageViewAnamorphosis.setImageBitmap(finalBmp);
         }
 
@@ -274,39 +315,39 @@ public class FinalRenderActivity extends AppCompatActivity {
                 mWidth = extractor.getVideoWidth();
                 mHeight = extractor.getVideoHeight();
 
-                if (direction.equals("Top") || direction.equals("Bottom"))
-                    stackPixels = mHeight;
-                else if (direction.equals("Left") || direction.equals("Right"))
-                    stackPixels = mWidth;
+                if (!direction.equals("Custom")) {
+                    if (direction.equals("Top") || direction.equals("Bottom"))
+                        stackPixels = mHeight;
+                    else if (direction.equals("Left") || direction.equals("Right"))
+                        stackPixels = mWidth;
 
-                duration = (int) extractor.getVideoDuration() / 1000000; //micro-second
-                frameRate = extractor.getVideoFrameRate();
+                    duration = (int) extractor.getVideoDuration() / 1000000; //micro-second
+                    frameRate = extractor.getVideoFrameRate();
 
-                Log.e(TAG, "Video size is " + mWidth + "x" + mHeight);
-                Log.e(TAG, "Duration is " + duration);
-                Log.e(TAG, "Frame rate is " + frameRate);
+                    Log.e(TAG, "Video size is " + mWidth + "x" + mHeight);
+                    Log.e(TAG, "Duration is " + duration);
+                    Log.e(TAG, "Frame rate is " + frameRate);
 
-                sample = (int) ((stackPixels) / ((duration) * frameRate));
-                Log.e(TAG, "Sample is " + sample);
-                //Need to interpolate
-                if (sample >= 3 ) {
-                    interpolate = true;
-                    // Nombre d'images a créer entre chaque images
-                    interpolationSample = sample -1 ;
-                    sample = 1;
+                    sample = (int) ((stackPixels) / ((duration) * frameRate));
+                    Log.e(TAG, "Sample is " + sample);
+                    //Need to interpolate
+                    if (sample >= 3) {
+                        interpolate = true;
+                        // Nombre d'images a créer entre chaque images
+                        interpolationSample = sample - 1;
+                        sample = 1;
 
-
-                    Log.e("Interpolate", "Interpolation needed");
+                        Log.e("Interpolate", "Interpolation needed");
+                    }
+                    //Need to jump frame
+                    else if (sample < 1) {
+                        Log.e("Jump", "jump frame needed");
+                        jumpFrame = true;
+                        sample = 1;
+                        selectFrame(frameRate, duration, stackPixels);
+                    }
+                    System.out.println("start scale " + sample);
                 }
-                //Need to jump frame
-                else if (sample < 1) {
-                    Log.e("Jump", "jump frame needed");
-                    jumpFrame = true;
-                    sample = 1;
-                    selectFrame(frameRate, duration, stackPixels);
-
-                }
-                System.out.println("start scale " + sample);
 
                 // Could use width/height from the MediaFormat to get full-size frames.
                 outputSurface = new FinalRenderActivity.CodecOutputSurface(mWidth, mHeight);
@@ -422,7 +463,8 @@ public class FinalRenderActivity extends AppCompatActivity {
 
                             if (decodeCount < MAX_FRAMES) {
                                 long startWhen = System.nanoTime();
-                                outputSurface.saveFrame();
+                                if (direction.equals("Custom")) outputSurface.saveCustomFrame();
+                                else outputSurface.saveFrame();
                                 publishProgress(finalPixels);
                                 frameSaveTime += System.nanoTime() - startWhen;
                             }
@@ -443,11 +485,133 @@ public class FinalRenderActivity extends AppCompatActivity {
      * Method to create a custom anamorphosis
      * @param currentBmp
      * @param pixels
-     * @param index
      */
-    public static void createCustomAnamorphosis(Bitmap currentBmp, int[] pixels, int index){
-
+    private static void createCustomAnamorphosis(Bitmap currentBmp, int[] pixels){
+        cursor++;
+        if (VERBOSE){
+            Log.d(TAG,"createCustomAnamorphosis");
+            Log.d(TAG,"path size "+tabPointsPath.length);
+            Log.d(TAG,"custom frame " + cursor);
+        }
+        PPointF pt;
+        if (cursor == 1) {
+            if (VERBOSE) {
+                Log.d(TAG, "init cur");
+            }
+            pointsPath = new Path();
+            tangentesPath = new Path();
+            selectPath = new Path();
+            pt = tabPointsPath[0];
+            pointsPath.moveTo(pt.x, pt.y);
+        }
+        if (cursor+1<tabPointsPath.length) {
+            pt = tabPointsPath[cursor];
+            pointsPath.lineTo(pt.x, pt.y);
+            Line lastLine = calcTangenteP(tabPointsPath[cursor - 1], tabPointsPath[cursor], tabPointsPath[cursor + 1], (direction.equals("Top") || direction.equals("Bottom")));
+            tangentesPath.reset();
+            tangentesPath.moveTo(lastLine.getP1().x, lastLine.getP1().y);
+            tangentesPath.lineTo(lastLine.getP2().x, lastLine.getP2().y);
+            if (saveLine != null) {
+                tangentesPath.moveTo(saveLine.getP1().x, saveLine.getP1().y);
+                tangentesPath.lineTo(saveLine.getP2().x, saveLine.getP2().y);
+            }
+            selectPixels(saveLine, lastLine, currentBmp, pixels);
+            saveLine = lastLine.copy();
+        }
     }
+
+    private static void selectPixels(Line line1, Line line2, Bitmap bmp, int[] pixels){
+        selectPath.reset();
+        System.out.println("SELECT "+cursor+" "+((line1!=null)?line1.getAt():"null") +" "+line2.getAt());
+        for (int y = 0;y<mHeight;y++) {
+            selectPath.moveTo(line2.calcX(y), y);
+            selectPath.lineTo((line1!=null)? line1.calcX(y) : 0, y);
+        }
+        /*try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }*/
+    }
+
+    private static PPointF calcTangExtremum(float a, float b, float at, int yval, boolean invert) {
+        float xmax = (invert)? mHeight : mWidth;
+        float x = 0;
+        float y = 0;
+
+        if (at != 0) {
+            x = Line.calcX(yval, a, b, at);
+            if (x < 0) {
+                x = 0;
+                y = Line.calcY(x, a, b, at);
+            } else if (x > xmax) {
+                x = xmax;
+                y = Line.calcY(x, a, b, at);
+            } else
+                y = yval;
+        }
+        else {
+            x = (yval==0)? 0 : xmax;
+            y = b;
+        }
+        return (invert)? new PPointF(y, x):new PPointF(x, y);
+    }
+
+    private static Line calcTangenteP(PPointF p1,PPointF p2, PPointF p3, boolean invert) {
+        if (!invert && (Math.abs(p1.x-p2.x)<ZERO || Math.abs(p1.x-p3.x)<ZERO || Math.abs(p2.x-p3.x)<ZERO)) {
+            return calcTangenteP(p1, p2, p3, true);
+        }
+
+        if (invert) {
+            p1 = p1.getInvert();
+            p2 = p2.getInvert();
+            p3 = p3.getInvert();
+        }
+
+        float A1 = -(p1.x*p1.x)+p2.x*p2.x;
+        float B1 = (-p1.x) + (p2.x);
+        float C1 = (-p1.y) + (p2.y);
+
+        float A2 = -(p2.x*p2.x)+p3.x*p3.x;
+        float B2 = (-p2.x) + (p3.x);
+        float C2 = (-p2.y) + (p3.y);
+
+        float Bmul = -(B2 / B1);
+
+        float A3 = Bmul * A1 + A2;
+        float C3 = Bmul * C1 + C2;
+
+        float a = C3 / A3;
+        float b = (C1 - A1 * a) / B1;
+        float c = p1.y - a * (p1.x*p1.x) - b * p1.x;
+
+        if (VERBOSE) {
+            Log.d(TAG, "f(x)=" + a + "x²+" + b + "x+" + c);
+            Log.d(TAG,String.valueOf(p2));
+            Log.d(TAG,"f'(x)=" + (a * 2) + "x+" + b);
+        }
+
+        float at = (2 * a * p2.x + b);
+        if (VERBOSE)
+            Log.d(TAG,"tangente:y="+at+"*(x-"+p2.x+")+"+p2.y);
+
+        PPointF pt1 = calcTangExtremum(p2.x, p2.y, at, 0, invert);
+        PPointF pt2 = calcTangExtremum(p2.x, p2.y, at, (invert)? mWidth : mHeight, invert);
+        if (VERBOSE)
+            Log.d(TAG,pt1+" "+pt2);
+
+        float atp = (at!=0)? -(1 / at) : 0;
+
+        if (VERBOSE)
+            Log.d(TAG,"tangente perpen:y="+atp+"*(x)+"+p2.y);
+        PPointF ptp1 = (atp != 0)? calcTangExtremum(p2.x, p2.y, atp, 0, invert) : ((invert)? new PPointF(0, p2.x) : new PPointF(p2.x, 0));
+        PPointF ptp2 = (atp != 0)? calcTangExtremum(p2.x, p2.y, atp, (invert)? mWidth : mHeight, invert) : ((invert)? new PPointF(mWidth, p2.x) : new PPointF(p2.x, mHeight));
+        if (VERBOSE)
+            Log.d(TAG,ptp1+" "+ptp2);
+
+        return new Line(atp,p2.x,p2.y,ptp1,ptp2);
+    }
+
 
     /**
      * Method to create an anamorphosis
@@ -457,6 +621,8 @@ public class FinalRenderActivity extends AppCompatActivity {
      * @param index
      */
     public static void createAnamorphosis(Bitmap currentBmp, int[] pixels, int index) {
+        if (VERBOSE)
+            Log.d(TAG,"createAnamorphosis");
         int height = mHeight;//currentBmp.getHeight();
         int width =mWidth ; //currentBmp.getWidth();
         int currentPixel[] = new int[height * width];
@@ -504,7 +670,8 @@ public class FinalRenderActivity extends AppCompatActivity {
                 }
                 break;
             default:
-                System.out.println("Error on the direction");
+                if (VERBOSE)
+                    Log.e(TAG,"Error on the direction");
                 Log.e("error", "errror");
                 break;
         }
@@ -736,6 +903,23 @@ public class FinalRenderActivity extends AppCompatActivity {
                 mFrameSyncObject.notifyAll();
             }
         }
+
+        public void saveCustomFrame() throws IOException {
+            if (direction.equals("Custom")) {
+                mPixelBuf.rewind();
+                GLES20.glReadPixels(0, 0, mWidth, mHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE,
+                        mPixelBuf);
+                mPixelBuf.rewind();
+
+                bmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+                bmp.copyPixelsFromBuffer(mPixelBuf);
+
+                createCustomAnamorphosis(bmp, finalPixels);
+
+                bmp.recycle();
+            }
+        }
+
 
         /**
          * Saves the current frame to disk as a PNG image.

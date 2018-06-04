@@ -24,4 +24,20 @@ public class PPointF extends PointF implements Serializable{
     public float get(int axe){
         return (axe>0)? y : x;
     }
+
+    public PPointF getInvert() {
+        return new PPointF(y,x);
+    }
+
+    public PPointF copy(){
+        return new PPointF(x,y);
+    }
+
+    @Override
+    public String toString() {
+        return "PPointF{" +
+                "x=" + x +
+                ", y=" + y +
+                '}';
+    }
 }
