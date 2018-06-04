@@ -102,7 +102,7 @@ public class FinalRenderActivity extends AppCompatActivity {
     int stackPixels;
     int frameRate;
 
-
+    private FramesExtraction mFramesExtractionTask;
 
 
     @Override
@@ -140,7 +140,8 @@ public class FinalRenderActivity extends AppCompatActivity {
         lockUI(true);
 
         // Starting extraction
-        new FramesExtraction().execute();
+        mFramesExtractionTask = new FramesExtraction();
+        mFramesExtractionTask.execute();
 
     }
 
@@ -1090,5 +1091,9 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
-
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        mFramesExtractionTask.cancel(true);
+    }
 }
