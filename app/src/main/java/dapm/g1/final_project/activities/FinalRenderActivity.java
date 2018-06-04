@@ -109,6 +109,7 @@ public class FinalRenderActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Supporting toolbar
         setContentView(R.layout.activity_final_render);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -123,18 +124,20 @@ public class FinalRenderActivity extends AppCompatActivity {
             Log.d(TAG, "size path : " + listPointsPath.size());
         }
 
+        // Retrieving data and transform to uri
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
         fileManager = PathUtil.getPath(this, uriData);
+        INPUT_FILE = fileManager.toString();
 
+        // Initializing variables
         stackPixels = 1;
         frameRate = 1;
 
-        System.out.println(TAG + " with video path : " + fileManager.toString());
-
-        INPUT_FILE = fileManager.toString();
-
-        // Resetting variable
+        // Resetting variable to make new anamorphosis
         indexRangePixels = 0;
+
+        // Setting up the view
+        lockUI(true);
 
         // Starting extraction
         new FramesExtraction().execute();
@@ -168,9 +171,13 @@ public class FinalRenderActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e("Saving", "Saving anamophosis failed");
         }
+
         Toast.makeText(FinalRenderActivity.this, "File saved:" + newImg.getAbsolutePath(), Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * Method to share the final anamorphosis
+     */
     @OnClick(R.id.shareAnamorphosisButton)
     void shareAnamorphosis() {
         Intent intent = new Intent(Intent.ACTION_SEND);
@@ -181,9 +188,12 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         // Will show every communication app that can share the picture
         intent.putExtra(Intent.EXTRA_STREAM, bitmapUri);
-        startActivity(Intent.createChooser(intent, "Share !"));
+        startActivity(Intent.createChooser(intent, "Share the anamorphosis !"));
     }
 
+    /**
+     * Method to go back to the main menu
+     */
     @OnClick(R.id.backToMenuButton)
     void backToMenu() {
         Intent goToMainMenuIntent = new Intent(this, MainActivity.class);
@@ -220,6 +230,7 @@ public class FinalRenderActivity extends AppCompatActivity {
 
             Toast.makeText(FinalRenderActivity.this, "Traitement fini", Toast.LENGTH_SHORT).show();
 
+            lockUI(false);
         }
 
         @Override
@@ -437,6 +448,28 @@ public class FinalRenderActivity extends AppCompatActivity {
                     (frameSaveTime / numSaved / 1000) + " us per frame");
         }
 
+    }
+
+    /**
+     * Method to lock/unlock the UI
+     * @param isUIlocked
+     */
+    public void lockUI(boolean isUIlocked){
+        if(isUIlocked){
+            mDownloadAnamorphosisButton.setClickable(false);
+            mDownloadAnamorphosisButton.setAlpha(.5f);
+            mShareAnamorphosisButton.setClickable(false);
+            mShareAnamorphosisButton.setAlpha(.5f);
+            mBackToMenuButton.setClickable(false);
+            mBackToMenuButton.setAlpha(.5f);
+        }else{
+            mDownloadAnamorphosisButton.setClickable(true);
+            mDownloadAnamorphosisButton.setAlpha(1f);
+            mShareAnamorphosisButton.setClickable(true);
+            mShareAnamorphosisButton.setAlpha(1f);
+            mBackToMenuButton.setClickable(true);
+            mBackToMenuButton.setAlpha(1f);
+        }
     }
 
     /**
@@ -812,7 +845,6 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
-
     /**
      * Code for rendering a texture onto a surface using OpenGL ES 2.0.
      */
@@ -1030,7 +1062,6 @@ public class FinalRenderActivity extends AppCompatActivity {
             }
         }
     }
-
 
     public void selectFrame(int fps, int duration, int size) {
         Log.e("ici duration", String.valueOf(duration));
