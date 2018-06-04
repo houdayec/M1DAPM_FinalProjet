@@ -99,7 +99,7 @@ public class FinalRenderActivity extends AppCompatActivity {
     static ArrayList<String> frameSelected = new ArrayList<>();
     private static List<PPointF> listPointsPath;
 
-    private int duration;
+    private float duration;
     int stackPixels;
     int frameRate;
 
@@ -288,7 +288,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                 else if (direction.equals("Left") || direction.equals("Right"))
                     stackPixels = mWidth;
 
-                duration = (int) extractor.getVideoDuration() / 1000000; //micro-second
+                duration = extractor.getVideoDuration() / 1000000; //micro-second
                 frameRate = extractor.getVideoFrameRate();
 
                 Log.e(TAG, "Video size is " + mWidth + "x" + mHeight);
@@ -1041,9 +1041,9 @@ public class FinalRenderActivity extends AppCompatActivity {
     }
 
 
-    public void selectFrame(int fps, int duration, int size) {
+    public void selectFrame(int fps, float duration, int size) {
         Log.e("ici duration", String.valueOf(duration));
-        int nbFrame = fps * duration;
+        int nbFrame = (int) (fps * duration);
         float step = nbFrame / size;
         Log.e("ici  nbFrame", String.valueOf(nbFrame));
         Log.e("ici step", String.valueOf(step));
