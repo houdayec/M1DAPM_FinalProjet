@@ -1083,14 +1083,14 @@ public class FinalRenderActivity extends AppCompatActivity {
         int height = firstBmp.getHeight();
         int width = firstBmp.getWidth();
         int initialPixels[] = new int[height * width];
-        int finalePixels[] = new int[height * width];
+        int lastPixels[] = new int[height * width];
         int newPixels[] = new int[height * width];
         int pixelColorStart[] = new int[3];
         int pixelColorEnd[] = new int[3];
         int newColor;
 
         firstBmp.getPixels(initialPixels, 0, width, 0, 0, width, height);
-        lastBmp.getPixels(finalePixels, 0, width, 0, 0, width, height);
+        lastBmp.getPixels(lastPixels, 0, width, 0, 0, width, height);
 
         Log.e("Interpolate", "Creating a bitmap ...");
         Log.e("sample" , String.valueOf(sample));
@@ -1105,9 +1105,9 @@ public class FinalRenderActivity extends AppCompatActivity {
                             pixelColorStart[1] = Color.green(initialPixels[index * width + k]);
                             pixelColorStart[2] = Color.blue(initialPixels[index * width + k]);
 
-                            pixelColorEnd[0] = Color.red(finalePixels[index * width + k]);
-                            pixelColorEnd[1] = Color.green(finalePixels[index * width + k]);
-                            pixelColorEnd[2] = Color.blue(finalePixels[index * width + k]);
+                            pixelColorEnd[0] = Color.red(lastPixels[index * width + k]);
+                            pixelColorEnd[1] = Color.green(lastPixels[index * width + k]);
+                            pixelColorEnd[2] = Color.blue(lastPixels[index * width + k]);
 
 
                             newColor = Color.rgb((int) ((1 - bmpToCreate) * pixelColorStart[0] + (bmpToCreate * pixelColorEnd[0])),
@@ -1129,9 +1129,9 @@ public class FinalRenderActivity extends AppCompatActivity {
                             pixelColorStart[1] = Color.green(initialPixels[indexTmp * width + k]);
                             pixelColorStart[2] = Color.blue(initialPixels[indexTmp * width + k]);
 
-                            pixelColorEnd[0] = Color.red(finalePixels[indexTmp * width + k]);
-                            pixelColorEnd[1] = Color.green(finalePixels[indexTmp * width + k]);
-                            pixelColorEnd[2] = Color.blue(finalePixels[indexTmp * width + k]);
+                            pixelColorEnd[0] = Color.red(lastPixels[indexTmp * width + k]);
+                            pixelColorEnd[1] = Color.green(lastPixels[indexTmp * width + k]);
+                            pixelColorEnd[2] = Color.blue(lastPixels[indexTmp * width + k]);
 
 
                             newColor = Color.rgb((int) ((1 - bmpToCreate) * pixelColorStart[0] + (bmpToCreate * pixelColorEnd[0])),
@@ -1153,9 +1153,9 @@ public class FinalRenderActivity extends AppCompatActivity {
                                 pixelColorStart[1] = Color.green(initialPixels[i * width + (index + k)]);
                                 pixelColorStart[2] = Color.blue(initialPixels[i * width + (index + k)]);
 
-                                pixelColorEnd[0] = Color.red(finalePixels[i * width + (index + k)]);
-                                pixelColorEnd[1] = Color.green(finalePixels[i * width + (index + k)]);
-                                pixelColorEnd[2] = Color.blue(finalePixels[i * width + (index + k)]);
+                                pixelColorEnd[0] = Color.red(lastPixels[i * width + (index + k)]);
+                                pixelColorEnd[1] = Color.green(lastPixels[i * width + (index + k)]);
+                                pixelColorEnd[2] = Color.blue(lastPixels[i * width + (index + k)]);
 
 
                                 newColor = Color.rgb((int) ((1 - bmpToCreate) * pixelColorStart[0] + (bmpToCreate * pixelColorEnd[0])),
@@ -1180,9 +1180,9 @@ public class FinalRenderActivity extends AppCompatActivity {
                                 pixelColorStart[1] = Color.green(initialPixels[i * width + (indexTmp - k)]);
                                 pixelColorStart[2] = Color.blue(initialPixels[i * width + (indexTmp - k)]);
 
-                                pixelColorEnd[0] = Color.red(finalePixels[i * width + (indexTmp - k)]);
-                                pixelColorEnd[1] = Color.green(finalePixels[i * width + (indexTmp - k)]);
-                                pixelColorEnd[2] = Color.blue(finalePixels[i * width + (indexTmp - k)]);
+                                pixelColorEnd[0] = Color.red(lastPixels[i * width + (indexTmp - k)]);
+                                pixelColorEnd[1] = Color.green(lastPixels[i * width + (indexTmp - k)]);
+                                pixelColorEnd[2] = Color.blue(lastPixels[i * width + (indexTmp - k)]);
 
 
                                 newColor = Color.rgb((int) ((1 - bmpToCreate) * pixelColorStart[0] + (bmpToCreate * pixelColorEnd[0])),
