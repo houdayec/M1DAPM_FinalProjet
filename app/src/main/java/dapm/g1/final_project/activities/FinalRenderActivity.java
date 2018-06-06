@@ -7,7 +7,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PointF;
 import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
@@ -41,7 +40,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import butterknife.BindView;
@@ -111,19 +109,28 @@ public class FinalRenderActivity extends AppCompatActivity {
     private static Paint pointsPaint = DrawingView.customPaint(Color.GREEN,5);
     private static Path tangentesPath;
     private static Paint tangentesPaint = DrawingView.customPaint(Color.rgb(255,0,150),5);
+    private static Path tangentes2Path;
+    private static Paint tangentes2Paint = DrawingView.customPaint(Color.rgb(200,200,255),5);
     private static Path selectPath;
     private static Paint selectPaint = DrawingView.customPaint(Color.rgb(255,200,0),1);
+    private static Path ptPath;
+    private static Paint ptPaint = DrawingView.customPaint(Color.rgb(50,50,255),10);
     private static int cursor;
     private static Line saveLine;
+    private static int start;
+    private static int end;
 
     private int duration;
     int stackPixels;
     int frameRate;
 
+    private FramesExtraction mFramesExtractionTask;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Supporting toolbar
         setContentView(R.layout.activity_final_render);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -134,32 +141,35 @@ public class FinalRenderActivity extends AppCompatActivity {
         // Getting data from previous activity
         direction = getIntent().getStringExtra("direction");
         if(direction.equals("Custom")){
-            List<PointF> lpoints = (List<PointF>)getIntent().getSerializableExtra("drawing");
-            if (lpoints.size()==0) finish();
+            ArrayList<PPointF> lpoints = getIntent().getParcelableArrayListExtra("drawing");
             tabPointsPath = new PPointF[lpoints.size()];
-            for (int i = 0;i<lpoints.size();i++) {
-                tabPointsPath[i] = new PPointF(lpoints.get(i));
-            }
+            lpoints.toArray(tabPointsPath);
+            start = getIntent().getIntExtra("start",0);
+            end = getIntent().getIntExtra("end",0);
             cursor = 0;
             saveLine = null;
             Log.d(TAG, "size path : " + tabPointsPath.length);
         }
 
+        // Retrieving data and transform to uri
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
         fileManager = PathUtil.getPath(this, uriData);
+        INPUT_FILE = fileManager.toString();
 
+        // Initializing variables
         stackPixels = 1;
         frameRate = 1;
 
-        System.out.println(TAG + " with video path : " + fileManager.toString());
-
-        INPUT_FILE = fileManager.toString();
-
-        // Resetting variable
+        // Resetting variable to make new anamorphosis
         indexRangePixels = 0;
 
+        // Setting up the view
+        lockUI(true);
+
         // Starting extraction
-        new FramesExtraction().execute();
+
+        mFramesExtractionTask = new FramesExtraction();
+        mFramesExtractionTask.execute();
     }
 
     /**
@@ -189,9 +199,13 @@ public class FinalRenderActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e("Saving", "Saving anamophosis failed");
         }
+
         Toast.makeText(FinalRenderActivity.this, "File saved:" + newImg.getAbsolutePath(), Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * Method to share the final anamorphosis
+     */
     @OnClick(R.id.shareAnamorphosisButton)
     void shareAnamorphosis() {
         Intent intent = new Intent(Intent.ACTION_SEND);
@@ -202,9 +216,12 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         // Will show every communication app that can share the picture
         intent.putExtra(Intent.EXTRA_STREAM, bitmapUri);
-        startActivity(Intent.createChooser(intent, "Share !"));
+        startActivity(Intent.createChooser(intent, "Share the anamorphosis !"));
     }
 
+    /**
+     * Method to go back to the main menu
+     */
     @OnClick(R.id.backToMenuButton)
     void backToMenu() {
         Intent goToMainMenuIntent = new Intent(this, MainActivity.class);
@@ -251,6 +268,7 @@ public class FinalRenderActivity extends AppCompatActivity {
 
             Toast.makeText(FinalRenderActivity.this, "Traitement fini", Toast.LENGTH_SHORT).show();
 
+            lockUI(false);
         }
 
         @Override
@@ -266,7 +284,9 @@ public class FinalRenderActivity extends AppCompatActivity {
                 canvas.drawColor(Color.WHITE);
                 canvas.drawPath(selectPath, selectPaint);
                 canvas.drawPath(tangentesPath, tangentesPaint);
+                canvas.drawPath(tangentes2Path, tangentes2Paint);
                 canvas.drawPath(pointsPath, pointsPaint);
+                canvas.drawPath(ptPath,ptPaint);
             }
             else {
                 finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0, mWidth, mHeight);
@@ -393,7 +413,7 @@ public class FinalRenderActivity extends AppCompatActivity {
 
             boolean outputDone = false;
             boolean inputDone = false;
-            while (!outputDone) {
+            while (!outputDone && !isCancelled()) {
                 if (VERBOSE) Log.d(TAG, "loop");
 
                 // Feed more data to the decoder.
@@ -430,7 +450,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                     }
                 }
 
-                if (!outputDone) {
+                if (!outputDone && !isCancelled()) {
                     int decoderStatus = decoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
                     if (decoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                         // no output available yet
@@ -466,7 +486,13 @@ public class FinalRenderActivity extends AppCompatActivity {
                                 if (direction.equals("Custom")) outputSurface.saveCustomFrame();
                                 else outputSurface.saveFrame();
                                 publishProgress(finalPixels);
+                                //System.out.println("ISCANCELED "+isCancelled());
                                 frameSaveTime += System.nanoTime() - startWhen;
+                                /*try {
+                                    Thread.sleep(1000);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }*/
                             }
                             decodeCount++;
                         }
@@ -479,6 +505,28 @@ public class FinalRenderActivity extends AppCompatActivity {
                     (frameSaveTime / numSaved / 1000) + " us per frame");
         }
 
+    }
+
+    /**
+     * Method to lock/unlock the UI
+     * @param isUIlocked
+     */
+    public void lockUI(boolean isUIlocked){
+        if(isUIlocked){
+            mDownloadAnamorphosisButton.setClickable(false);
+            mDownloadAnamorphosisButton.setAlpha(.5f);
+            mShareAnamorphosisButton.setClickable(false);
+            mShareAnamorphosisButton.setAlpha(.5f);
+            mBackToMenuButton.setClickable(false);
+            mBackToMenuButton.setAlpha(.5f);
+        }else{
+            mDownloadAnamorphosisButton.setClickable(true);
+            mDownloadAnamorphosisButton.setAlpha(1f);
+            mShareAnamorphosisButton.setClickable(true);
+            mShareAnamorphosisButton.setAlpha(1f);
+            mBackToMenuButton.setClickable(true);
+            mBackToMenuButton.setAlpha(1f);
+        }
     }
 
     /**
@@ -500,6 +548,8 @@ public class FinalRenderActivity extends AppCompatActivity {
             }
             pointsPath = new Path();
             tangentesPath = new Path();
+            tangentes2Path = new Path();
+            ptPath = new Path();
             selectPath = new Path();
             pt = tabPointsPath[0];
             pointsPath.moveTo(pt.x, pt.y);
@@ -507,31 +557,96 @@ public class FinalRenderActivity extends AppCompatActivity {
         if (cursor+1<tabPointsPath.length) {
             pt = tabPointsPath[cursor];
             pointsPath.lineTo(pt.x, pt.y);
-            Line lastLine = calcTangenteP(tabPointsPath[cursor - 1], tabPointsPath[cursor], tabPointsPath[cursor + 1], (direction.equals("Top") || direction.equals("Bottom")));
-            tangentesPath.reset();
-            tangentesPath.moveTo(lastLine.getP1().x, lastLine.getP1().y);
-            tangentesPath.lineTo(lastLine.getP2().x, lastLine.getP2().y);
-            if (saveLine != null) {
-                tangentesPath.moveTo(saveLine.getP1().x, saveLine.getP1().y);
-                tangentesPath.lineTo(saveLine.getP2().x, saveLine.getP2().y);
-            }
-            selectPixels(saveLine, lastLine, currentBmp, pixels);
-            saveLine = lastLine.copy();
+            calcTangenteP(tabPointsPath[cursor - 1], tabPointsPath[cursor], tabPointsPath[cursor + 1], (start==1 || start==2),currentBmp,pixels);
+        }
+        else {
+            calcSelectPixels(saveLine,null,currentBmp,pixels);
         }
     }
 
-    private static void selectPixels(Line line1, Line line2, Bitmap bmp, int[] pixels){
-        selectPath.reset();
-        System.out.println("SELECT "+cursor+" "+((line1!=null)?line1.getAt():"null") +" "+line2.getAt());
-        for (int y = 0;y<mHeight;y++) {
-            selectPath.moveTo(line2.calcX(y), y);
-            selectPath.lineTo((line1!=null)? line1.calcX(y) : 0, y);
+    private static void calcSelectPixels(Line line1, Line line2, Bitmap bmp, int[] pixels){
+        tangentesPath.reset();
+        tangentes2Path.reset();
+        if (line2 != null) {
+            tangentesPath.moveTo(line2.getP1().x, line2.getP1().y);
+            tangentesPath.lineTo(line2.getP2().x, line2.getP2().y);
         }
-        /*try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }*/
+        if (line1 != null) {
+            tangentes2Path.moveTo(line1.getP1().x, line1.getP1().y);
+            tangentes2Path.lineTo(line1.getP2().x, line1.getP2().y);
+        }
+        selectPath.reset();
+        ptPath.reset();
+        System.out.println("SELECT "+cursor+" "+((line1!=null)?line1.getAt():"null") +" "+((line2!=null)?line2.getAt():"null"));
+        if (line1!=null && line2!=null) {
+            ptPath.addCircle(line1.getP1().x, line1.getP1().y, 15, Path.Direction.CW);
+            ptPath.addCircle(line2.getP1().x, line2.getP1().y, 15, Path.Direction.CW);
+            if (line2.getAt()<=1 && line2.getAt()>=-1) {
+                float y1,y2;
+                for (int x = 0; x < mWidth; x++) {
+                    y1 = ((y1=line2.calcY(x))<0)? 0 : (y1>mHeight)? mHeight : y1;
+                    y2 = ((y2=line1.calcY(x))<0)? 0 : (y2>mHeight)? mHeight : y2;
+                    selectPath.moveTo(x, y1);
+                    selectPath.lineTo(x, y2);
+                }
+            } else {
+                float x1,x2;
+                for (int y = 0; y < mHeight; y++) {
+                    x1 = ((x1=line2.calcX(y))<0)? 0 : (x1>mWidth)? mWidth : x1;
+                    x2 = ((x2=line1.calcX(y))<0)? 0 : (x2>mWidth)? mWidth : x2;
+                    selectPath.moveTo(x1, y);
+                    selectPath.lineTo(x2, y);
+                }
+            }
+        }
+        else if(line1==null && line2!=null){
+            ptPath.addCircle(line2.getP1().x, line2.getP1().y, 15, Path.Direction.CW);
+            if (start >=6 && start <=8) {
+                for (int y = 0; y < mHeight; y++) {
+                    selectPath.moveTo(line2.calcX(y), y);
+                    selectPath.lineTo(0, y);
+                }
+            } else if (start >=3 && start <=5) {
+                for (int y = 0; y < mHeight; y++) {
+                    selectPath.moveTo(line2.calcX(y), y);
+                    selectPath.lineTo(mWidth, y);
+                }
+            } else if (start ==1) {
+                for (int x = 0; x < mWidth; x++) {
+                    selectPath.moveTo(x, line2.calcY(x));
+                    selectPath.lineTo(x, mHeight);
+                }
+            } else if (start ==2) {
+                for (int x = 0; x < mWidth; x++) {
+                    selectPath.moveTo(x, line2.calcY(x));
+                    selectPath.lineTo(x, 0);
+                }
+            }
+        }
+        else if(line1!=null && line2==null){
+            ptPath.addCircle(line1.getP1().x, line1.getP1().y, 15, Path.Direction.CW);
+            if (end >=6 && end <=8) {
+                for (int y = 0; y < mHeight; y++) {
+                    selectPath.moveTo(line1.calcX(y), y);
+                    selectPath.lineTo(0, y);
+                }
+            } else if (end >=3 && end <=5) {
+                for (int y = 0; y < mHeight; y++) {
+                    selectPath.moveTo(line1.calcX(y), y);
+                    selectPath.lineTo(mWidth, y);
+                }
+            } else if (end ==1) {
+                for (int x = 0; x < mWidth; x++) {
+                    selectPath.moveTo(x, line1.calcY(x));
+                    selectPath.lineTo(x, mHeight);
+                }
+            } else if (end ==2) {
+                for (int x = 0; x < mWidth; x++) {
+                    selectPath.moveTo(x, line1.calcY(x));
+                    selectPath.lineTo(x, 0);
+                }
+            }
+        }
     }
 
     private static PPointF calcTangExtremum(float a, float b, float at, int yval, boolean invert) {
@@ -557,9 +672,10 @@ public class FinalRenderActivity extends AppCompatActivity {
         return (invert)? new PPointF(y, x):new PPointF(x, y);
     }
 
-    private static Line calcTangenteP(PPointF p1,PPointF p2, PPointF p3, boolean invert) {
-        if (!invert && (Math.abs(p1.x-p2.x)<ZERO || Math.abs(p1.x-p3.x)<ZERO || Math.abs(p2.x-p3.x)<ZERO)) {
-            return calcTangenteP(p1, p2, p3, true);
+    private static void calcTangenteP(PPointF p1,PPointF p2, PPointF p3, boolean invert, Bitmap currentBmp, int[] pixels) {
+        if (!invert && ((int)Math.abs(p1.x-p2.x)==0 || (int)Math.abs(p1.x-p3.x)==0 || (int)Math.abs(p2.x-p3.x)==0)) {
+            calcTangenteP(p1, p2, p3, true,currentBmp,pixels);
+            return;
         }
 
         if (invert) {
@@ -609,7 +725,9 @@ public class FinalRenderActivity extends AppCompatActivity {
         if (VERBOSE)
             Log.d(TAG,ptp1+" "+ptp2);
 
-        return new Line(atp,p2.x,p2.y,ptp1,ptp2);
+        Line lastLine = new Line(ptp1,ptp2);
+        calcSelectPixels(saveLine, lastLine, currentBmp, pixels);
+        saveLine = lastLine.copy();
     }
 
 
@@ -996,7 +1114,6 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
-
     /**
      * Code for rendering a texture onto a surface using OpenGL ES 2.0.
      */
@@ -1215,7 +1332,6 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
-
     public void selectFrame(int fps, int duration, int size) {
         Log.e("ici duration", String.valueOf(duration));
         int nbFrame = fps * duration;
@@ -1243,5 +1359,9 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
-
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        mFramesExtractionTask.cancel(true);
+    }
 }

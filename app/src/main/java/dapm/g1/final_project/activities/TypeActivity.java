@@ -2,6 +2,7 @@ package dapm.g1.final_project.activities;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -17,11 +18,14 @@ import android.widget.ToggleButton;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dapm.g1.final_project.CustomView.DrawingView;
+import dapm.g1.final_project.PPointF;
 import dapm.g1.final_project.PathUtil;
 import dapm.g1.final_project.R;
 import dapm.g1.final_project.myMediaExtractor;
@@ -64,7 +68,7 @@ public class TypeActivity extends AppCompatActivity {
             int h = mediaExtractor.getVideoHeight();
             System.out.println("video size w:"+w+" h:"+h);
             dv = new DrawingView(this,(int)Math.ceil(mediaExtractor.getVideoFrameRate()*(mediaExtractor.getVideoDuration()/1000000f)),w,h);
-            dv.setBackgroundColor(getResources().getColor(R.color.white));
+            dv.setBackgroundColor(Color.rgb(240,240,255));
             layoutDrawingView.addView(dv);
         } catch (IOException | myMediaExtractor.NoTrackSelectedException e) {
             finish();
@@ -111,9 +115,11 @@ public class TypeActivity extends AppCompatActivity {
         Bundle bundleArgs = new Bundle();
         if(mSpinnerDirection.getSelectedItem().toString().equals("Custom"))
         {
-            Serializable spath = dv.getPath();
+            ArrayList<PPointF> spath = dv.getPath();
             if (!validCustom.isChecked() && spath!=null) {
-                bundleArgs.putSerializable("drawing", spath);
+                bundleArgs.putParcelableArrayList("drawing", spath);
+                bundleArgs.putInt("start",dv.getStartcap());
+                bundleArgs.putInt("end",dv.getEndcap());
             }
             else {
                 Toast.makeText(TypeActivity.this, "Please valid your drawing", Toast.LENGTH_SHORT).show();

@@ -10,6 +10,20 @@ public class Line {
     private PPointF p1;
     private PPointF p2;
 
+    public Line(PPointF p1, PPointF p2){
+        if (p1.x < p2.x){
+            this.p1 = p1;
+            this.p2 = p2;
+        }
+        else {
+            this.p1 = p2;
+            this.p2 = p1;
+        }
+        at = (this.p2.y-this.p1.y)/(this.p2.x-this.p1.x);
+        a = this.p1.x;
+        b = this.p1.y;
+    }
+
     public Line(float at, float a, float b, PPointF p1, PPointF p2) {
         this.at = at;
         this.a = a;
@@ -42,10 +56,6 @@ public class Line {
         return at;
     }
 
-    public void setAt(float at) {
-        this.at = at;
-    }
-
     public float getA() {
         return a;
     }
@@ -58,24 +68,12 @@ public class Line {
         return b;
     }
 
-    public void setB(float b) {
-        this.b = b;
-    }
-
     public PPointF getP1() {
         return p1;
     }
 
-    public void setP1(PPointF p1) {
-        this.p1 = p1;
-    }
-
     public PPointF getP2() {
         return p2;
-    }
-
-    public void setP2(PPointF p2) {
-        this.p2 = p2;
     }
 
     @Override

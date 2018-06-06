@@ -49,7 +49,7 @@ public class DrawingView extends View {
     private Paint mFramePaint;
 
     private List<PPointF> listPoints;
-    private List<PPointF> path;
+    private ArrayList<PPointF> path;
     private PPointF[] diagbase;
     private PPointF[] diagtemp;
     private boolean cap;
@@ -74,7 +74,7 @@ public class DrawingView extends View {
         mCursorPath = new Path();
         mCirclePaint = customPaint(Color.BLACK, 5);
         mCirclePath = new Path();
-        mFramePaint = customPaint(Color.BLUE, 5);
+        mFramePaint = customPaint(Color.rgb(46,204,113), 5);
         mFramePath = new Path();
         this.step = step;
     }
@@ -103,6 +103,11 @@ public class DrawingView extends View {
                 new PPointF(width * FRAME_RATIO, 0), new PPointF(width * FRAME_RATIO, height),
                 new PPointF(width * (1 - FRAME_RATIO), 0), new PPointF(Math.round(width * (1 - FRAME_RATIO)), height)
         };
+        for (int i = 0; i < frame.length; i++) {
+            mFramePath.moveTo(frame[i].x, frame[i].y);
+            i++;
+            mFramePath.lineTo(frame[i].x, frame[i].y);
+        }
         mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         mCanvas = new Canvas(mBitmap);
     }
@@ -170,7 +175,7 @@ public class DrawingView extends View {
 
     private void capture(boolean cap) {
         this.cap = cap;
-        mFramePath.reset();
+        //mFramePath.reset();
         mCursorPath.reset();
         if (cap) {
             System.out.println("start capture");
@@ -180,11 +185,11 @@ public class DrawingView extends View {
             path = new ArrayList<>();
             diagbase = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
             diagtemp = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
-            for (int i = 0; i < frame.length; i++) {
+            /*for (int i = 0; i < frame.length; i++) {
                 mFramePath.moveTo(frame[i].x, frame[i].y);
                 i++;
                 mFramePath.lineTo(frame[i].x, frame[i].y);
-            }
+            }*/
         } else if (listPoints.size() >= 2) {
             System.out.println("end capture");
             PPointF lastP = listPoints.get(listPoints.size()-1);
@@ -284,19 +289,19 @@ public class DrawingView extends View {
         }
     }
 
-    private List<PPointF> initBezier(){
+    private ArrayList<PPointF> initBezier(){
         if (listPoints.size()>0) {
             System.out.println("init bezier");
             mPath.reset();
             float ratioWidthHomothetie = (float)realWidth/width;
             float ratioHeightHomothetie = (float)realHeight/height;
-            List<PPointF> B = new ArrayList<>();
+            ArrayList<PPointF> B = new ArrayList<>();
             int n = listPoints.size()-1;
             float precision = 1f/step;
             if (n>0) {
                 System.out.println("precision "+precision+" n "+n);
                 float u = 0.0f;
-                while (u <= 1f) {
+                while (u <= 1f+precision) {
                     float x = 0.0f;
                     float y = 0.0f;
                     for(int i=0;i<n+1;i++) {
@@ -437,11 +442,11 @@ public class DrawingView extends View {
         return (p2.x - p1.x) * (m.y - p1.y) - (p2.y - p1.y) * (m.x - p1.x);
     }
 
-    public Serializable getPath() {
+    public ArrayList<PPointF> getPath() {
         if (path==null) return null;
         System.out.println(path.size());
         if (path.size()==0) return null;
-        return (Serializable) path;
+        return path;
     }
 
     public int getStartcap() {
