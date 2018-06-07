@@ -2,10 +2,12 @@ package dapm.g1.final_project.activities;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -16,11 +18,14 @@ import android.widget.ToggleButton;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dapm.g1.final_project.CustomView.DrawingView;
+import dapm.g1.final_project.PPointF;
 import dapm.g1.final_project.PathUtil;
 import dapm.g1.final_project.R;
 import dapm.g1.final_project.myMediaExtractor;
@@ -59,15 +64,15 @@ public class TypeActivity extends AppCompatActivity {
         try {
             myMediaExtractor mediaExtractor = new myMediaExtractor(PathUtil.getPath(this, uriData));
             mediaExtractor.selectTrack(mediaExtractor.getTrackVideoIndex());
-            dv = new DrawingView(this,(int)Math.ceil(mediaExtractor.getVideoFrameRate()*(mediaExtractor.getVideoDuration()/1000000f)));
-            dv.setBackgroundColor(getResources().getColor(R.color.white));
-
+            int w = mediaExtractor.getVideoWidth();
+            int h = mediaExtractor.getVideoHeight();
+            System.out.println("video size w:"+w+" h:"+h);
+            dv = new DrawingView(this,(int)Math.ceil(mediaExtractor.getVideoFrameRate()*(mediaExtractor.getVideoDuration()/1000000f)),w,h);
+            dv.setBackgroundColor(Color.rgb(240,240,255));
             layoutDrawingView.addView(dv);
         } catch (IOException | myMediaExtractor.NoTrackSelectedException e) {
             finish();
         }
-
-
 
         mSpinnerDirection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -110,9 +115,12 @@ public class TypeActivity extends AppCompatActivity {
         Bundle bundleArgs = new Bundle();
         if(mSpinnerDirection.getSelectedItem().toString().equals("Custom"))
         {
-            Serializable spath = dv.getPath();
-            if (!validCustom.isChecked() && spath!=null)
-                bundleArgs.putSerializable("drawing", spath);
+            ArrayList<PPointF> spath = dv.getPath();
+            if (!validCustom.isChecked() && spath!=null) {
+                bundleArgs.putParcelableArrayList("drawing", spath);
+                bundleArgs.putInt("start",dv.getStartcap());
+                bundleArgs.putInt("end",dv.getEndcap());
+            }
             else {
                 Toast.makeText(TypeActivity.this, "Please valid your drawing", Toast.LENGTH_SHORT).show();
                 return;
@@ -121,7 +129,6 @@ public class TypeActivity extends AppCompatActivity {
         bundleArgs.putString("uri_video", uriData.toString());
         bundleArgs.putString("direction", mSpinnerDirection.getSelectedItem().toString());
         intentFinalRender.putExtras(bundleArgs);
-        System.out.println("started custom anamorphosis");
         startActivity(intentFinalRender);
     }
 }

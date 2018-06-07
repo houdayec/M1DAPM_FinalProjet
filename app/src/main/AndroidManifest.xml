@@ -64,11 +64,6 @@
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".activities.Test_Algo_MT"
-            android:label="@string/title_activity_test__algo__mt"
-            android:screenOrientation="portrait"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
             android:name=".activities.Test_Multi_Thread"
             android:label="@string/title_activity_test__multi__thread"
             android:theme="@style/AppTheme.NoActionBar"></activity>
