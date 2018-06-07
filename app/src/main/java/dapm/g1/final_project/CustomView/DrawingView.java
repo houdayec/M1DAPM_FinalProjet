@@ -7,6 +7,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -43,6 +45,9 @@ public class DrawingView extends View {
     private Path mCirclePath;
     private Paint mCirclePaint;
 
+    private RectF mRect;
+    private Paint mRectPaint;
+
     private static final float FRAME_RATIO = 0.90f;
     private PPointF[] frame;
     private Path mFramePath;
@@ -61,6 +66,7 @@ public class DrawingView extends View {
 
     public DrawingView(Context c,int step,int rw,int rh) {
         super(c);
+        System.out.println("Step : "+step);
         realHeight = rh;
         realWidth = rw;
         eventEnabled = false;
@@ -76,6 +82,8 @@ public class DrawingView extends View {
         mCirclePath = new Path();
         mFramePaint = customPaint(Color.rgb(46,204,113), 5);
         mFramePath = new Path();
+        mRectPaint = new Paint();
+        mRectPaint.setColor(Color.argb(127,255,240,0));
         this.step = step;
     }
 
@@ -98,10 +106,10 @@ public class DrawingView extends View {
         width = w;
         height = h;
         frame = new PPointF[]{
-                new PPointF(0, height * FRAME_RATIO), new PPointF(width, height * FRAME_RATIO),
-                new PPointF(0, height * (1 - FRAME_RATIO)), new PPointF(width, height * (1 - FRAME_RATIO)),
-                new PPointF(width * FRAME_RATIO, 0), new PPointF(width * FRAME_RATIO, height),
-                new PPointF(width * (1 - FRAME_RATIO), 0), new PPointF(Math.round(width * (1 - FRAME_RATIO)), height)
+                new PPointF(0, height * FRAME_RATIO), new PPointF(width, height * FRAME_RATIO), //bas
+                new PPointF(0, height * (1 - FRAME_RATIO)), new PPointF(width, height * (1 - FRAME_RATIO)), //haut
+                new PPointF(width * FRAME_RATIO, 0), new PPointF(width * FRAME_RATIO, height), //droite
+                new PPointF(width * (1 - FRAME_RATIO), 0), new PPointF(Math.round(width * (1 - FRAME_RATIO)), height) //gauche
         };
         for (int i = 0; i < frame.length; i++) {
             mFramePath.moveTo(frame[i].x, frame[i].y);
@@ -112,15 +120,46 @@ public class DrawingView extends View {
         mCanvas = new Canvas(mBitmap);
     }
 
+    private void drawEndArea() {
+        switch (startcap){
+            case 1:
+                mRect = new RectF(frame[6].x, frame[6].y, frame[4].x, frame[3].y);
+                break;
+            case 2:
+                mRect = new RectF(frame[7].x, frame[0].y, frame[5].x, frame[5].y);
+                break;
+            case 3:
+                mRect = new RectF(frame[2].x, frame[2].y, frame[7].x, frame[0].y);
+                break;
+            case 4:
+                mRect = new RectF(frame[2].x, frame[6].y, frame[6].x, frame[2].y);
+                break;
+            case 5:
+                mRect = new RectF(frame[0].x, frame[0].y, frame[7].x, frame[7].y);
+                break;
+            case 6:
+                mRect = new RectF(frame[4].x, frame[3].y, frame[1].x, frame[1].y);
+                break;
+            case 7:
+                mRect = new RectF(frame[4].x, frame[4].y, frame[3].x, frame[3].y);
+                break;
+            case 8:
+                mRect = new RectF(frame[5].x, frame[1].y, frame[1].x, frame[5].y);
+                break;
+        }
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
+        if (mRect != null) canvas.drawRect(mRect, mRectPaint);
         canvas.drawPath(mFramePath, mFramePaint);
         canvas.drawPath(mPath, mPaint);
         canvas.drawPath(mPointsPath, mPointsPaint);
         canvas.drawPath(mCursorPath, mCursorPaint);
         canvas.drawPath(mCirclePath, mCirclePaint);
+        System.out.println(mRect);
     }
 
     private void touch_start(float x, float y) {
@@ -147,6 +186,7 @@ public class DrawingView extends View {
 
     private void touch_up() {
         mCirclePath.reset();
+        mRect = null;
         capture(false);
     }
 
@@ -175,21 +215,16 @@ public class DrawingView extends View {
 
     private void capture(boolean cap) {
         this.cap = cap;
-        //mFramePath.reset();
         mCursorPath.reset();
         if (cap) {
             System.out.println("start capture");
             startcap = 0;
             endcap = 0;
+            mRect = null;
             listPoints = new ArrayList<>();
             path = new ArrayList<>();
             diagbase = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
             diagtemp = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
-            /*for (int i = 0; i < frame.length; i++) {
-                mFramePath.moveTo(frame[i].x, frame[i].y);
-                i++;
-                mFramePath.lineTo(frame[i].x, frame[i].y);
-            }*/
         } else if (listPoints.size() >= 2) {
             System.out.println("end capture");
             PPointF lastP = listPoints.get(listPoints.size()-1);
@@ -297,13 +332,16 @@ public class DrawingView extends View {
             float ratioHeightHomothetie = (float)realHeight/height;
             ArrayList<PPointF> B = new ArrayList<>();
             int n = listPoints.size()-1;
-            float precision = 1f/step;
+            //float precision = 1f/step;
             if (n>0) {
-                System.out.println("precision "+precision+" n "+n);
-                float u = 0.0f;
-                while (u <= 1f+precision) {
+                //System.out.println("precision "+precision+" n "+n);
+                //float u = 0.0f;
+                //while (u <= 1f) {
+                float u;
+                for (int cnt=0;cnt<step;cnt++){
                     float x = 0.0f;
                     float y = 0.0f;
+                    u = (float)cnt/step;
                     for(int i=0;i<n+1;i++) {
                         double b = (((factorialOf(n))/((factorialOf(i))*(factorialOf(n-i))))*(Math.pow(u,i))*(Math.pow((1-u),(n-i))));
                         PPointF p = listPoints.get(i);
@@ -313,7 +351,7 @@ public class DrawingView extends View {
                     if(B.size()==0) mPath.moveTo(x,y);
                     else mPath.lineTo(x,y);
                     B.add(new PPointF(x*ratioWidthHomothetie, y*ratioHeightHomothetie));
-                    u += precision;
+                    //u += precision;
                 }
             }
             return B;
@@ -353,6 +391,7 @@ public class DrawingView extends View {
                     System.out.println(diagbase[0]+" "+diagbase[1]);
                     refreshDiag(p, false);
                 }
+                drawEndArea();
             }
             if (startcap != 0 && acceptPoint (p)) {
                 refreshCursorCap(p);

@@ -279,15 +279,16 @@ public class FinalRenderActivity extends AppCompatActivity {
         protected void onProgressUpdate(int[]... pixels) {
             //finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0, mWidth, mHeight);
             if (direction.equals("Custom")) {
-                /*canvas = new Canvas(finalBmp);
-                canvas.drawColor(Color.WHITE);
-                canvas.drawPath(selectPath, selectPaint);
-                canvas.drawPath(tangentesPath, tangentesPaint);
-                canvas.drawPath(tangentes2Path, tangentes2Paint);
-                canvas.drawPath(pointsPath, pointsPaint);
-                canvas.drawPath(ptPath,ptPaint);*/
-                finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0, mWidth, mHeight);
                 canvas = new Canvas(finalBmp);
+                if (VERBOSE) {
+                    canvas.drawColor(Color.WHITE);
+                    canvas.drawPath(selectPath, selectPaint);
+                    canvas.drawPath(tangentes2Path, tangentes2Paint);
+                    canvas.drawPath(pointsPath, pointsPaint);
+                    canvas.drawPath(ptPath, ptPaint);
+                }
+                else
+                    finalBmp.setPixels(pixels[0], 0, mWidth, 0, 0, mWidth, mHeight);
                 canvas.drawPath(tangentesPath, tangentesPaint);
             }
             else {
@@ -550,17 +551,21 @@ public class FinalRenderActivity extends AppCompatActivity {
             if (VERBOSE) {
                 Log.d(TAG, "init cur");
             }
-            pointsPath = new Path();
             tangentesPath = new Path();
-            tangentes2Path = new Path();
-            ptPath = new Path();
-            selectPath = new Path();
-            pt = tabPointsPath[0];
-            pointsPath.moveTo(pt.x, pt.y);
+            if(VERBOSE) {
+                pointsPath = new Path();
+                tangentes2Path = new Path();
+                ptPath = new Path();
+                selectPath = new Path();
+                pt = tabPointsPath[0];
+                pointsPath.moveTo(pt.x, pt.y);
+            }
         }
         if (cursor+1<tabPointsPath.length) {
-            pt = tabPointsPath[cursor];
-            pointsPath.lineTo(pt.x, pt.y);
+            if(VERBOSE) {
+                pt = tabPointsPath[cursor];
+                pointsPath.lineTo(pt.x, pt.y);
+            }
             calcTangenteP(tabPointsPath[cursor - 1], tabPointsPath[cursor], tabPointsPath[cursor + 1], (start==1 || start==2),currentBmp,pixels);
         }
         else {
@@ -570,17 +575,19 @@ public class FinalRenderActivity extends AppCompatActivity {
 
     private static void calcSelectPixels(Line line1, Line line2, Bitmap bmp, int[] pixels){
         tangentesPath.reset();
-        tangentes2Path.reset();
+        if (VERBOSE){
+            tangentes2Path.reset();
+            selectPath.reset();
+            ptPath.reset();
+        }
         if (line2 != null) {
             tangentesPath.moveTo(line2.getP1().x, line2.getP1().y);
             tangentesPath.lineTo(line2.getP2().x, line2.getP2().y);
         }
-        if (line1 != null) {
+        if (line1 != null && VERBOSE) {
             tangentes2Path.moveTo(line1.getP1().x, line1.getP1().y);
             tangentes2Path.lineTo(line1.getP2().x, line1.getP2().y);
         }
-        selectPath.reset();
-        ptPath.reset();
         int[] currentPixel = new int[mHeight * mWidth];
         bmp.getPixels(currentPixel, 0, mWidth, 0, 0, mWidth, mHeight);
         System.out.println("SELECT "+cursor+" "+((line1!=null)?line1.getAt():"null") +" "+((line2!=null)?line2.getAt():"null"));
@@ -590,8 +597,10 @@ public class FinalRenderActivity extends AppCompatActivity {
         int ymax = Math.round(getMinMax(line1,line2,true,1));
         float x1,x2,y1,y2;
         if (line1!=null && line2!=null) {
-            ptPath.addCircle(line1.getP1().x, line1.getP1().y, 15, Path.Direction.CW);
-            ptPath.addCircle(line2.getP1().x, line2.getP1().y, 15, Path.Direction.CW);
+            if (VERBOSE) {
+                ptPath.addCircle(line1.getP1().x, line1.getP1().y, 15, Path.Direction.CW);
+                ptPath.addCircle(line2.getP1().x, line2.getP1().y, 15, Path.Direction.CW);
+            }
             if (line2.getAt()<=1 && line2.getAt()>=-1) {
                 for (int x = xmin; x < xmax; x++) {
                     y1 = ((y1=line2.calcY(x))<0)? 0 : (y1>mHeight)? mHeight : y1;
@@ -601,13 +610,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                         y1 = y2;
                         y2 = ys;
                     }
-                    selectPath.moveTo(x, y1);
-                    selectPath.lineTo(x, y2);
-                    for (int y = Math.round(y1); y < y2; y++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsH(x,Math.round(y1),Math.round(y2),pixels,currentPixel);
                 }
             } else {
                 for (int y = ymin; y < ymax; y++) {
@@ -618,117 +621,63 @@ public class FinalRenderActivity extends AppCompatActivity {
                         x1 = x2;
                         x2 = xs;
                     }
-                    selectPath.moveTo(x1, y);
-                    selectPath.lineTo(x2, y);
-                    for (int x = Math.round(x1); x < x2; x++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsV(y,Math.round(x1),Math.round(x2),pixels,currentPixel);
                 }
             }
         }
         else if(line1==null && line2!=null){
-            ptPath.addCircle(line2.getP1().x, line2.getP1().y, 15, Path.Direction.CW);
+            if (VERBOSE) ptPath.addCircle(line2.getP1().x, line2.getP1().y, 15, Path.Direction.CW);
             if (start >=6 && start <=8) {
                 for (int y = ymin; y < ymax; y++) {
                     x1 = 0;
                     x2 = line2.calcX(y);
-                    selectPath.moveTo(x1, y);
-                    selectPath.lineTo(x2, y);
-                    for (int x = Math.round(x1); x < x2; x++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsV(y,Math.round(x1),Math.round(x2),pixels,currentPixel);
                 }
             } else if (start >=3 && start <=5) {
                 for (int y = ymin; y < ymax; y++) {
                     x1 = line2.calcX(y);
                     x2 = mWidth;
-                    selectPath.moveTo(x1, y);
-                    selectPath.lineTo(x2, y);
-                    for (int x = Math.round(x1); x < x2; x++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsV(y,Math.round(x1),Math.round(x2),pixels,currentPixel);
                 }
             } else if (start ==1) {
                 for (int x = xmin; x < xmax; x++) {
                     y1 = line2.calcY(x);
                     y2 = mHeight;
-                    selectPath.moveTo(x, y1);
-                    selectPath.lineTo(x, y2);
-                    for (int y = Math.round(y1); y < y2; y++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsH(x,Math.round(y1),Math.round(y2),pixels,currentPixel);
                 }
             } else if (start ==2) {
                 for (int x = xmin; x < xmax; x++) {
                     y1 = 0;
                     y2 = line2.calcY(x);
-                    selectPath.moveTo(x, y1);
-                    selectPath.lineTo(x, y2);
-                    for (int y = Math.round(y1); y < y2; y++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsH(x,Math.round(y1),Math.round(y2),pixels,currentPixel);
                 }
             }
         }
         else if(line1!=null && line2==null){
-            ptPath.addCircle(line1.getP1().x, line1.getP1().y, 15, Path.Direction.CW);
+            if (VERBOSE) ptPath.addCircle(line1.getP1().x, line1.getP1().y, 15, Path.Direction.CW);
             if (end >=6 && end <=8) {
-                for (int y = 0; y < mHeight; y++) {
+                for (int y = ymin; y < ymax; y++) {
                     x1 = 0;
                     x2 = line1.calcX(y);
-                    selectPath.moveTo(x1, y);
-                    selectPath.lineTo(x2, y);
-                    for (int x = Math.round(x1); x < x2; x++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsV(y,Math.round(x1),Math.round(x2),pixels,currentPixel);
                 }
             } else if (end >=3 && end <=5) {
-                for (int y = 0; y < mHeight; y++) {
+                for (int y = ymin; y < ymax; y++) {
                     x1 = line1.calcX(y);
                     x2 = mWidth;
-                    selectPath.moveTo(x1, y);
-                    selectPath.lineTo(x2, y);
-                    for (int x = Math.round(x1); x < x2; x++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsV(y,Math.round(x1),Math.round(x2),pixels,currentPixel);
                 }
             } else if (end ==1) {
-                for (int x = 0; x < mWidth; x++) {
+                for (int x = xmin; x < xmax; x++) {
                     y1 = line1.calcY(x);
                     y2 = mHeight;
-                    selectPath.moveTo(x, y1);
-                    selectPath.lineTo(x, y2);
-                    for (int y = Math.round(y1); y < y2; y++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsH(x,Math.round(y1),Math.round(y2),pixels,currentPixel);
                 }
             } else if (end ==2) {
-                for (int x = 0; x < mWidth; x++) {
+                for (int x = xmin; x < xmax; x++) {
                     y1 = 0;
                     y2 = line1.calcY(x);
-                    selectPath.moveTo(x, y1);
-                    selectPath.lineTo(x, y2);
-                    for (int y = Math.round(y1); y < y2; y++){
-                        int id = y*mWidth+x;
-                        if (pixels[id]==0)
-                            pixels[id] = currentPixel[id];
-                    }
+                    selectPixelsH(x,Math.round(y1),Math.round(y2),pixels,currentPixel);
                 }
             }
         }
@@ -739,6 +688,30 @@ public class FinalRenderActivity extends AppCompatActivity {
             return Math.max((line1!=null)?Math.max(line1.getP1().get(axe),line1.getP2().get(axe)):0,(line2!=null)?Math.max(line2.getP1().get(axe),line2.getP2().get(axe)):0);
         }
         return Math.min((line1!=null)?Math.min(line1.getP1().get(axe),line1.getP2().get(axe)):Float.MAX_VALUE,(line2!=null)?Math.min(line2.getP1().get(axe),line2.getP2().get(axe)):Float.MAX_VALUE);
+    }
+
+    private static void selectPixelsH(int x, int y1, int y2, int[] pixels, int[] currentPixels){
+        if (VERBOSE) {
+            selectPath.moveTo(x, y1);
+            selectPath.lineTo(x, y2);
+        } else
+        for (int y = y1; y < y2; y++){
+            int id = y*mWidth+x;
+            if (pixels[id]==0)
+                pixels[id] = currentPixels[id];
+        }
+    }
+
+    private static void selectPixelsV(int y, int x1, int x2, int[] pixels, int[] currentPixels){
+        if (VERBOSE) {
+            selectPath.moveTo(x1, y);
+            selectPath.lineTo(x2, y);
+        } else
+        for (int x = Math.round(x1); x < x2; x++){
+            int id = y*mWidth+x;
+            if (pixels[id]==0)
+                pixels[id] = currentPixels[id];
+        }
     }
 
     private static PPointF calcTangExtremum(float a, float b, float at, int yval, boolean invert) {

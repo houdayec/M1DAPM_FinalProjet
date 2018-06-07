@@ -66,8 +66,10 @@ public class TypeActivity extends AppCompatActivity {
             mediaExtractor.selectTrack(mediaExtractor.getTrackVideoIndex());
             int w = mediaExtractor.getVideoWidth();
             int h = mediaExtractor.getVideoHeight();
-            System.out.println("video size w:"+w+" h:"+h);
-            dv = new DrawingView(this,(int)Math.ceil(mediaExtractor.getVideoFrameRate()*(mediaExtractor.getVideoDuration()/1000000f)),w,h);
+            float f = mediaExtractor.getVideoFrameRate()*(mediaExtractor.getVideoDuration()/1000000f);
+            System.out.println("video size w:"+w+" h:"+h+" nbFrame"+f);
+
+            dv = new DrawingView(this,(int)Math.ceil(f)+1,w,h);
             dv.setBackgroundColor(Color.rgb(240,240,255));
             layoutDrawingView.addView(dv);
         } catch (IOException | myMediaExtractor.NoTrackSelectedException e) {
