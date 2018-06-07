@@ -9,4 +9,6 @@
     <string name="title_activity_test__algo__mt">Test_Algo_MT</string>
     <string name="title_activity_test__finger_paint">Test_FingerPaint</string>
     <string name="title_activity_test__multi__thread">Test_Multi_Thread</string>
+
+    <string name="title_generation_anamorphosis">Generation of your anamorphosis</string>
 </resources>

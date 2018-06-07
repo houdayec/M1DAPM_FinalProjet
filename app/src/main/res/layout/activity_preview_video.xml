@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/colorPrimary">
 
         <VideoView
             android:layout_width="match_parent"
@@ -16,7 +17,8 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_gravity="center|bottom"
-            android:gravity="center">
+            android:gravity="center"
+            android:layout_marginBottom="10dp">
 
             <ImageButton
                 android:id="@+id/cancelVideo"
@@ -24,13 +26,13 @@
                 android:layout_height="64dp"
                 android:layout_marginRight="80dp"
                 android:backgroundTint="@color/white"
-                android:src="@drawable/ic_backspace_black_36dp"/>
+                android:src="@drawable/ic_backspace_black_24dp"/>
 
             <ImageButton
                 android:id="@+id/controlVideoButton"
                 android:layout_width="64dp"
                 android:layout_height="64dp"
-                android:src="@drawable/ic_play_pause_black_36dp"
+                android:src="@drawable/ic_play_pause_black_24dp"
                 android:backgroundTint="@color/white"/>
 
             <ImageButton
@@ -39,7 +41,7 @@
                 android:layout_height="64dp"
                 android:layout_marginLeft="80dp"
                 android:backgroundTint="@color/white"
-                android:src="@drawable/ic_check_circle_black_36dp"/>
+                android:src="@drawable/ic_check_circle_black_24dp"/>
 
         </LinearLayout>
 
