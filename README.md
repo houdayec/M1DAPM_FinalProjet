@@ -1,4 +1,4 @@
-Ici vous obtiendrez toutes les informations de l'application Android Anamorpheus.r INSTALL.
+Ici vous obtiendrez toutes les informations de l'application Android Anamorpheus.
 
 Qu'est ce que c'est ?
 -----------
@@ -34,9 +34,6 @@ Report des bugs
  Si jamais des bugs apparaissent sur votre smartphone, merci de reporter le bug avec la version Android de votre téléphone ainsi que son modèle.
 
 -> houdayer.corentin@gmail.com
-
-System-specific Notes
----------------------
 
 Authors
 ---------------------
