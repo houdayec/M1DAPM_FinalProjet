@@ -130,11 +130,6 @@ public class FinalRenderActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Supporting toolbar
-        setContentView(R.layout.activity_final_render);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
         // Binding view
         ButterKnife.bind(this);
 
