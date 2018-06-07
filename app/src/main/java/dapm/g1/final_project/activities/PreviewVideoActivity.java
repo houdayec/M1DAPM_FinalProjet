@@ -25,9 +25,8 @@ import dapm.g1.final_project.R;
 public class PreviewVideoActivity extends AppCompatActivity {
 
     /**
-     * Binding view
+     * BINDING VIEW
      */
-
     @BindView(R.id.videoView)
     VideoView mVideoView;
 
@@ -40,6 +39,9 @@ public class PreviewVideoActivity extends AppCompatActivity {
     @BindView(R.id.controlVideoButton)
     ImageButton mControlVideoButton;
 
+    /**
+     * INTERN STATES
+     */
     private Uri uriData;
 
     @Override
@@ -53,8 +55,6 @@ public class PreviewVideoActivity extends AppCompatActivity {
         // Setting up the VideoView
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
         mVideoView.setVideoURI(uriData);
-        Log.e("preview",uriData.toString());
-
         mVideoView.start();
     }
 
@@ -83,11 +83,10 @@ public class PreviewVideoActivity extends AppCompatActivity {
      */
     @OnClick(R.id.validVideo)
     void validVideo(){
+        // Creating intent with arguments
         Intent intentType = new Intent(this, TypeActivity.class);
         Bundle bundleArgs = new Bundle();
-        Log.e("validVideopreview",uriData.toString());
         bundleArgs.putString("uri_video", uriData.toString());
-        Toast.makeText(this, "uri : " + uriData.toString(), Toast.LENGTH_LONG).show();
         intentType.putExtras(bundleArgs);
         startActivity(intentType);
     }
