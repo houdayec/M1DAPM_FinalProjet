@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Anamorpheus</string>
-    <string name="load_video_button">Load a video from gallery</string>
+    <string name="load_video_button">Load a video</string>
     <string name="record_video_button">Record a video</string>
     <string name="title_activity_type">TypeActivity</string>
     <string name="title_activity_record_video">RecordVideoActivity</string>
@@ -10,5 +10,5 @@
     <string name="title_activity_test__finger_paint">Test_FingerPaint</string>
     <string name="title_activity_test__multi__thread">Test_Multi_Thread</string>
 
-    <string name="title_generation_anamorphosis">Generation of your anamorphosis</string>
+    <string name="title_generation_anamorphosis">Anamorphosis generation</string>
 </resources>
