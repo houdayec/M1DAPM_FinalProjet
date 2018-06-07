@@ -25,16 +25,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".activities.SplashScreen"
-            android:screenOrientation="portrait"
-            android:theme="@style/splash_screen">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-        <activity
             android:name=".MainActivity"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -58,10 +48,6 @@
             android:label="@string/title_activity_preview_video"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".activities.Test_Multi_Thread"
-            android:label="@string/title_activity_test__multi__thread"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
         <activity
             android:name=".activities.FinalRenderActivity"
             android:label="@string/title_activity_test__multi__thread"
