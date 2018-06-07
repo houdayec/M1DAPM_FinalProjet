@@ -13,7 +13,7 @@ Anamorpheus n'est pas disponible publiquement, cependant vous pouvez télécharg
 Documentation
 -------------
 
-Un site web (landing page) présentant l'application est disponible à l'adresses suivante : https://houdayec.github.io/Anamorpheus/index.html
+Un site web (landing page) présentant l'application est disponible à l'adresse suivante : https://houdayec.github.io/Anamorpheus/index.html
 
 Un guide utilisateur est également disponible : https://houdayec.github.io/Anamorpheus/userGuide.html
 
@@ -28,7 +28,7 @@ Le dévelopement a suivi un workflow (gitflow) pour la gestion de code, le GitHu
 
 Un trello a été créé pour suivre l'évolution des projets et la gestion des sprints : https://trello.com/b/31o6c45M/m1dapm-projet-final
 
-Report des bugs
+Rapport de bugs
 -------------
 
  Si jamais des bugs apparaissent sur votre smartphone, merci de reporter le bug avec la version Android de votre téléphone ainsi que son modèle.
