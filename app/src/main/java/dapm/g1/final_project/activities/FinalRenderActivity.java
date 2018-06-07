@@ -3,6 +3,7 @@ package dapm.g1.final_project.activities;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
@@ -88,7 +89,7 @@ public class FinalRenderActivity extends AppCompatActivity {
     protected static Bitmap finalBmp;
     static Bitmap bmp;
     static Bitmap bmp2 = null;
-    static Bitmap interpolatedBmp;
+    //static Bitmap interpolatedBmp;
 
     // Interpolation vars
     static boolean interpolate = false;
@@ -98,11 +99,9 @@ public class FinalRenderActivity extends AppCompatActivity {
     static ArrayList<String> frameSelected = new ArrayList<>();
     private static List<PPointF> listPointsPath;
 
-    private int duration;
+    private float duration;
     int stackPixels;
     int frameRate;
-
-
 
 
     @Override
@@ -118,8 +117,8 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         // Getting data from previous activity
         direction = getIntent().getStringExtra("direction");
-        if(direction.equals("Custom")){
-            listPointsPath = ((List<PPointF>)getIntent().getSerializableExtra("drawing"));
+        if (direction.equals("Custom")) {
+            listPointsPath = ((List<PPointF>) getIntent().getSerializableExtra("drawing"));
             Log.d(TAG, "size path : " + listPointsPath.size());
         }
 
@@ -139,6 +138,14 @@ public class FinalRenderActivity extends AppCompatActivity {
         // Starting extraction
         new FramesExtraction().execute();
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Resetting variable
+        indexRangePixels = 0;
     }
 
     /**
@@ -213,7 +220,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         protected void onPostExecute(String result) {
 
             //mProgressDialog.dismiss();
-            //finalBmp.setPixels(finalPixels, 0, mWidth, 0, 0,mWidth, mHeight);
+            // finalBmp.setPixels(finalPixels, 0, mWidth, 0, 0,mWidth, mHeight);
             mImageViewAnamorphosis.setImageBitmap(finalBmp);
 
             Log.e("onPostExecute", "reached");
@@ -279,7 +286,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                 else if (direction.equals("Left") || direction.equals("Right"))
                     stackPixels = mWidth;
 
-                duration = (int) extractor.getVideoDuration() / 1000000; //micro-second
+                duration = extractor.getVideoDuration() / 1000000; //micro-second
                 frameRate = extractor.getVideoFrameRate();
 
                 Log.e(TAG, "Video size is " + mWidth + "x" + mHeight);
@@ -289,10 +296,10 @@ public class FinalRenderActivity extends AppCompatActivity {
                 sample = (int) ((stackPixels) / ((duration) * frameRate));
                 Log.e(TAG, "Sample is " + sample);
                 //Need to interpolate
-                if (sample >= 3 ) {
+                if (sample >= 3) {
                     interpolate = true;
                     // Nombre d'images a créer entre chaque images
-                    interpolationSample = sample -1 ;
+                    interpolationSample = sample - 1;
                     sample = 1;
 
 
@@ -441,11 +448,12 @@ public class FinalRenderActivity extends AppCompatActivity {
 
     /**
      * Method to create a custom anamorphosis
+     *
      * @param currentBmp
      * @param pixels
      * @param index
      */
-    public static void createCustomAnamorphosis(Bitmap currentBmp, int[] pixels, int index){
+    public static void createCustomAnamorphosis(Bitmap currentBmp, int[] pixels, int index) {
 
     }
 
@@ -458,7 +466,7 @@ public class FinalRenderActivity extends AppCompatActivity {
      */
     public static void createAnamorphosis(Bitmap currentBmp, int[] pixels, int index) {
         int height = mHeight;//currentBmp.getHeight();
-        int width =mWidth ; //currentBmp.getWidth();
+        int width = mWidth; //currentBmp.getWidth();
         int currentPixel[] = new int[height * width];
         currentBmp.getPixels(currentPixel, 0, width, 0, 0, width, height);
         switch (direction) {
@@ -767,36 +775,25 @@ public class FinalRenderActivity extends AppCompatActivity {
                     Log.e("InterpolateSample", String.valueOf(interpolationSample));
                     Log.e("Interpolate bmp count", String.valueOf(bmpCount));
                     idFrame++;
-
                     for (float i = bmpCount; i <= 1; i += bmpCount) {
-                        if (bmp2 != null) {
-                            // Calcul d'une nouvelle image interpolée
-                            interpolatedBmp = Old_FinalRenderActivity.bitmapInterpolation(bmp2, bmp, i, sample, indexRangePixels);
+                        final float finalI = i;
+                        Bitmap interpolatedBmp;
+                        // Calcul d'une nouvelle image interpolée
+                        interpolatedBmp = FinalRenderActivity.bitmapInterpolation(bmp2, bmp, finalI, sample, indexRangePixels);
 
-                            createAnamorphosis(interpolatedBmp, finalPixels, indexRangePixels);
-                            indexRangePixels += sample;
-                            interpolatedBmp.recycle();
-                        }
+                        createAnamorphosis(interpolatedBmp, finalPixels, indexRangePixels);
+                        indexRangePixels += sample;
+                        interpolatedBmp.recycle();
                     }
                     bmp2.recycle();
                 }
+                bmp2 = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+                bmp2 = Bitmap.createScaledBitmap(bmp, mWidth, mHeight, false);
+
                 createAnamorphosis(bmp, finalPixels, indexRangePixels);
                 indexRangePixels += sample;
-
-             bmp2 = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-             bmp2.createBitmap(bmp);
             }
             bmp.recycle();
-          /*  }
-                      } catch (Exception e) {
-                        e.printStackTrace();
-                  }
-            }
-            };
-
-            thread.start();*/
-
-
             System.out.println("frame " + idFrame);
 
         }
@@ -1032,9 +1029,9 @@ public class FinalRenderActivity extends AppCompatActivity {
     }
 
 
-    public void selectFrame(int fps, int duration, int size) {
+    public void selectFrame(int fps, float duration, int size) {
         Log.e("ici duration", String.valueOf(duration));
-        int nbFrame = fps * duration;
+        int nbFrame = (int) (fps * duration);
         float step = nbFrame / size;
         Log.e("ici  nbFrame", String.valueOf(nbFrame));
         Log.e("ici step", String.valueOf(step));
@@ -1057,6 +1054,145 @@ public class FinalRenderActivity extends AppCompatActivity {
             }
             vRcompteur += vReste;
         }
+    }
+
+
+    /**
+     * Method to generate new bitmaps if needed
+     *
+     * @param firstBmp
+     * @param lastBmp
+     * @param bmpToCreate
+     */
+
+    public static Bitmap bitmapInterpolation(Bitmap firstBmp, Bitmap lastBmp, float bmpToCreate, int sample, int index) {
+
+        int height = firstBmp.getHeight();
+        int width = firstBmp.getWidth();
+        int initialPixels[] = new int[height * width];
+        int lastPixels[] = new int[height * width];
+        int newPixels[] = new int[height * width];
+        int pixelColorStart[] = new int[3];
+        int pixelColorEnd[] = new int[3];
+        int newColor;
+        Bitmap test = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+        test = firstBmp;
+        test.getPixels(initialPixels, 0, width, 0, 0, width, height);
+        lastBmp.getPixels(lastPixels, 0, width, 0, 0, width, height);
+
+        Log.e("Interpolate", "Creating a bitmap ...");
+        Log.e("sample", String.valueOf(sample));
+        Log.e("index", String.valueOf(index));
+
+        switch (direction) {
+            case "Top":
+                if (index < height) {
+                    for (int k = 0; k < sample * width; k++) {
+                        if ((index * width) + k < width * height) {
+                            pixelColorStart[0] = Color.red(initialPixels[index * width + k]);
+                            pixelColorStart[1] = Color.green(initialPixels[index * width + k]);
+                            pixelColorStart[2] = Color.blue(initialPixels[index * width + k]);
+
+                            pixelColorEnd[0] = Color.red(lastPixels[index * width + k]);
+                            pixelColorEnd[1] = Color.green(lastPixels[index * width + k]);
+                            pixelColorEnd[2] = Color.blue(lastPixels[index * width + k]);
+
+
+                            newColor = Color.rgb((int) ((1 - bmpToCreate) * pixelColorStart[0] + (bmpToCreate * pixelColorEnd[0])),
+                                    (int) ((1 - bmpToCreate) * pixelColorStart[1] + (bmpToCreate * pixelColorEnd[1])),
+                                    (int) ((1 - bmpToCreate) * pixelColorStart[2] + (bmpToCreate * pixelColorEnd[2])));
+
+
+                            newPixels[index * width + k] = newColor;
+                        }
+                    }
+                }
+                break;
+            case "Bottom":
+                if (index < height) {
+                    int indexTmp = (height - 1) - index;
+                    for (int k = (height - 1); k > (height - 1) - (sample * width); k--) {
+                        if ((indexTmp * width) + k < width * height) {
+                            pixelColorStart[0] = Color.red(initialPixels[indexTmp * width + k]);
+                            pixelColorStart[1] = Color.green(initialPixels[indexTmp * width + k]);
+                            pixelColorStart[2] = Color.blue(initialPixels[indexTmp * width + k]);
+
+                            pixelColorEnd[0] = Color.red(lastPixels[indexTmp * width + k]);
+                            pixelColorEnd[1] = Color.green(lastPixels[indexTmp * width + k]);
+                            pixelColorEnd[2] = Color.blue(lastPixels[indexTmp * width + k]);
+
+
+                            newColor = Color.rgb((int) ((1 - bmpToCreate) * pixelColorStart[0] + (bmpToCreate * pixelColorEnd[0])),
+                                    (int) ((1 - bmpToCreate) * pixelColorStart[1] + (bmpToCreate * pixelColorEnd[1])),
+                                    (int) ((1 - bmpToCreate) * pixelColorStart[2] + (bmpToCreate * pixelColorEnd[2])));
+
+
+                            newPixels[indexTmp * width + k] = newColor;
+                        }
+                    }
+                }
+                break;
+            case "Left":
+                if (index < width) {
+                    for (int k = 0; k < sample; k++) {
+                        for (int i = 0; i < height; i++) {
+                            if ((i * width) + index + k < width * height) {
+                                pixelColorStart[0] = Color.red(initialPixels[i * width + (index + k)]);
+                                pixelColorStart[1] = Color.green(initialPixels[i * width + (index + k)]);
+                                pixelColorStart[2] = Color.blue(initialPixels[i * width + (index + k)]);
+
+                                pixelColorEnd[0] = Color.red(lastPixels[i * width + (index + k)]);
+                                pixelColorEnd[1] = Color.green(lastPixels[i * width + (index + k)]);
+                                pixelColorEnd[2] = Color.blue(lastPixels[i * width + (index + k)]);
+
+
+                                newColor = Color.rgb((int) ((1 - bmpToCreate) * pixelColorStart[0] + (bmpToCreate * pixelColorEnd[0])),
+                                        (int) ((1 - bmpToCreate) * pixelColorStart[1] + (bmpToCreate * pixelColorEnd[1])),
+                                        (int) ((1 - bmpToCreate) * pixelColorStart[2] + (bmpToCreate * pixelColorEnd[2])));
+
+
+                                newPixels[i * width + (index + k)] = newColor;
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case "Right":
+                if (index < width) {
+                    int indexTmp = (width - 1) - index;
+                    for (int k = 0; k < sample; k++) {
+                        for (int i = 0; i < height; i++) {
+                            if ((i * width) + indexTmp - k > 0)
+                                pixelColorStart[0] = Color.red(initialPixels[i * width + (indexTmp - k)]);
+                            pixelColorStart[1] = Color.green(initialPixels[i * width + (indexTmp - k)]);
+                            pixelColorStart[2] = Color.blue(initialPixels[i * width + (indexTmp - k)]);
+
+                            pixelColorEnd[0] = Color.red(lastPixels[i * width + (indexTmp - k)]);
+                            pixelColorEnd[1] = Color.green(lastPixels[i * width + (indexTmp - k)]);
+                            pixelColorEnd[2] = Color.blue(lastPixels[i * width + (indexTmp - k)]);
+
+
+                            newColor = Color.rgb((int) ((1 - bmpToCreate) * pixelColorStart[0] + (bmpToCreate * pixelColorEnd[0])),
+                                    (int) ((1 - bmpToCreate) * pixelColorStart[1] + (bmpToCreate * pixelColorEnd[1])),
+                                    (int) ((1 - bmpToCreate) * pixelColorStart[2] + (bmpToCreate * pixelColorEnd[2])));
+
+
+                            newPixels[i * width + (indexTmp - k)] = newColor;
+                        }
+                    }
+                }
+                break;
+            default:
+                System.out.println("Error on the direction");
+                Log.e("error", "errror");
+                break;
+        }
+
+
+        Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        newBitmap.setPixels(newPixels, 0, width, 0, 0, width, height);
+        return newBitmap;
     }
 
 
