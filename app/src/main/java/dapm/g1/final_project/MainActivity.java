@@ -16,6 +16,8 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dapm.g1.final_project.activities.PreviewVideoActivity;
+import dapm.g1.final_project.utils.PathUtils;
+import dapm.g1.final_project.utils.VideoUtils;
 import wseemann.media.FFmpegMediaMetadataRetriever;
 
 public class MainActivity extends AppCompatActivity {
@@ -119,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
 
         // If the user wants to use a video of his gallery
         if (requestCode == REQUEST_TAKE_GALLERY_VIDEO && resultCode == RESULT_OK) {
-            fileManager = PathUtil.getPath(this, intent.getData());
+            fileManager = PathUtils.getPath(this, intent.getData());
 
             if (fileManager != null) {
                 mediaMetadataRetriever = new FFmpegMediaMetadataRetriever();

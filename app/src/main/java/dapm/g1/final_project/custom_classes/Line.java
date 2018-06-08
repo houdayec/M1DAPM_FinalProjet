@@ -1,4 +1,4 @@
-package dapm.g1.final_project;
+package dapm.g1.final_project.custom_classes;
 
 /**
  * Created by mickael alos on 03/06/2018.
@@ -7,12 +7,12 @@ public class Line {
 
     private float at, a, b;
 
-    private PPointF p1, p2;
+    private CustomPointF p1, p2;
 
     /**
      * CONSTRUCTORS
      */
-    public Line(PPointF p1, PPointF p2){
+    public Line(CustomPointF p1, CustomPointF p2){
         if (p1.x < p2.x){
             this.p1 = p1;
             this.p2 = p2;
@@ -26,7 +26,7 @@ public class Line {
         b = this.p1.y;
     }
 
-    public Line(float at, float a, float b, PPointF p1, PPointF p2) {
+    public Line(float at, float a, float b, CustomPointF p1, CustomPointF p2) {
         this.at = at;
         this.a = a;
         this.b = b;
@@ -34,11 +34,11 @@ public class Line {
         this.p2 = p2;
     }
 
-    public float position(PPointF m) {
+    public float position(CustomPointF m) {
         return position(p1,p2,m);
     }
 
-    public static float position(PPointF p1,PPointF p2,PPointF m) {
+    public static float position(CustomPointF p1, CustomPointF p2, CustomPointF m) {
         return (p2.x - p1.x) * (m.y - p1.y) - (p2.y - p1.y) * (m.x - p1.x);
     }
 
@@ -77,11 +77,11 @@ public class Line {
         return b;
     }
 
-    public PPointF getP1() {
+    public CustomPointF getP1() {
         return p1;
     }
 
-    public PPointF getP2() {
+    public CustomPointF getP2() {
         return p2;
     }
 

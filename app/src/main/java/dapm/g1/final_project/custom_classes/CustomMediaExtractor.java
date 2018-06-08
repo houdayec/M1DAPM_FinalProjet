@@ -1,4 +1,4 @@
-package dapm.g1.final_project;
+package dapm.g1.final_project.custom_classes;
 
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
@@ -10,23 +10,23 @@ import java.nio.ByteBuffer;
 /**
  * Created by mickael alos on 31/05/2018.
  */
-public class myMediaExtractor {
+public class CustomMediaExtractor {
     private final MediaExtractor extractor;
     private MediaFormat format=null;
     private boolean VERBOSE=false;
     private String TAG=this.getClass().getSimpleName();
 
-    public myMediaExtractor(final String FILE_NAME) throws IOException {
+    public CustomMediaExtractor(final String FILE_NAME) throws IOException {
         extractor = new MediaExtractor();
         extractor.setDataSource(FILE_NAME);
     }
 
-    public myMediaExtractor setVERBOSE(boolean newstate){
+    public CustomMediaExtractor setVERBOSE(boolean newstate){
         VERBOSE = newstate;
         return this;
     }
 
-    public myMediaExtractor setTAG(String newtag){
+    public CustomMediaExtractor setTAG(String newtag){
         TAG = newtag;
         return this;
     }

@@ -21,11 +21,11 @@ import java.util.ArrayList;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import dapm.g1.final_project.CustomView.DrawingView;
-import dapm.g1.final_project.PPointF;
-import dapm.g1.final_project.PathUtil;
+import dapm.g1.final_project.custom_classes.CustomPointF;
+import dapm.g1.final_project.custom_classes.DrawingView;
+import dapm.g1.final_project.utils.PathUtils;
 import dapm.g1.final_project.R;
-import dapm.g1.final_project.myMediaExtractor;
+import dapm.g1.final_project.custom_classes.CustomMediaExtractor;
 
 public class TypeActivity extends AppCompatActivity {
 
@@ -66,7 +66,7 @@ public class TypeActivity extends AppCompatActivity {
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
 
         try {
-            myMediaExtractor mediaExtractor = new myMediaExtractor(PathUtil.getPath(this, uriData));
+            CustomMediaExtractor mediaExtractor = new CustomMediaExtractor(PathUtils.getPath(this, uriData));
             mediaExtractor.selectTrack(mediaExtractor.getTrackVideoIndex());
 
             int w = mediaExtractor.getVideoWidth();
@@ -78,7 +78,7 @@ public class TypeActivity extends AppCompatActivity {
 
             dv.setBackgroundColor(Color.rgb(240,240,255));
             layoutDrawingView.addView(dv);
-        } catch (IOException | myMediaExtractor.NoTrackSelectedException e) {
+        } catch (IOException | CustomMediaExtractor.NoTrackSelectedException e) {
             finish();
         }
 
@@ -127,7 +127,7 @@ public class TypeActivity extends AppCompatActivity {
         Bundle bundleArgs = new Bundle();
         if(mSpinnerDirection.getSelectedItem().toString().equals("Custom"))
         {
-            ArrayList<PPointF> spath = dv.getPath();
+            ArrayList<CustomPointF> spath = dv.getPath();
             // add to bundle the curve personalized
             if (!validCustom.isChecked() && spath!=null) {
                 bundleArgs.putParcelableArrayList("drawing", spath);

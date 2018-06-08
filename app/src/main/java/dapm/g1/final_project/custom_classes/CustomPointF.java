@@ -1,38 +1,36 @@
-package dapm.g1.final_project;
+package dapm.g1.final_project.custom_classes;
 
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import java.io.Serializable;
-
 /**
  * Created by mickael alos on 30/05/2018.
  */
-public class PPointF extends PointF implements Parcelable{
+public class CustomPointF extends PointF implements Parcelable{
 
-    public PPointF() {
+    public CustomPointF() {
         super();
     }
-    public PPointF(float x,float y) {
+    public CustomPointF(float x, float y) {
         super(x,y);
     }
-    public PPointF(Point p) {
+    public CustomPointF(Point p) {
         super(p);
     }
-    public PPointF(PointF p) {
+    public CustomPointF(PointF p) {
         super(p.x,p.y);
     }
     public float get(int axe){
         return (axe>0)? y : x;
     }
 
-    public float distanceBetween(PPointF p){
+    public float distanceBetween(CustomPointF p){
         return norm(x-p.x,y-p.y);
     }
 
-    public static float distanceBetween(PPointF p1, PPointF p2) {
+    public static float distanceBetween(CustomPointF p1, CustomPointF p2) {
         return norm(p1.x-p2.x,p1.y-p2.y);
     }
 
@@ -40,7 +38,7 @@ public class PPointF extends PointF implements Parcelable{
         return (float)Math.sqrt(Math.pow(dx,2)+Math.pow(dy,2));
     }
 
-    public static float angle(PPointF p1, PPointF pm, PPointF p2){
+    public static float angle(CustomPointF p1, CustomPointF pm, CustomPointF p2){
         float dxU = p1.x-pm.x;
         float dyU = p1.y-pm.y;
         float dxV = pm.x-p2.x;
@@ -48,12 +46,12 @@ public class PPointF extends PointF implements Parcelable{
         return (float)Math.toDegrees(Math.acos((dxU*dxV+dyU*dyV)/(norm(dxU,dyU)*norm(dxV,dyV))));
     }
 
-    public PPointF getInvert() {
-        return new PPointF(y,x);
+    public CustomPointF getInvert() {
+        return new CustomPointF(y,x);
     }
 
-    public PPointF copy(){
-        return new PPointF(x,y);
+    public CustomPointF copy(){
+        return new CustomPointF(x,y);
     }
 
     @Override
@@ -69,28 +67,28 @@ public class PPointF extends PointF implements Parcelable{
 
     @Override
     public String toString() {
-        return "PPointF{" +
+        return "CustomPointF{" +
                 "x=" + x +
                 ", y=" + y +
                 '}';
     }
 
-    public static final Parcelable.Creator<PPointF> CREATOR = new Parcelable.Creator<PPointF>()
+    public static final Parcelable.Creator<CustomPointF> CREATOR = new Parcelable.Creator<CustomPointF>()
     {
         @Override
-        public PPointF createFromParcel(Parcel source)
+        public CustomPointF createFromParcel(Parcel source)
         {
-            return new PPointF(source);
+            return new CustomPointF(source);
         }
 
         @Override
-        public PPointF[] newArray(int size)
+        public CustomPointF[] newArray(int size)
         {
-            return new PPointF[size];
+            return new CustomPointF[size];
         }
     };
 
-    private PPointF(Parcel in) {
+    private CustomPointF(Parcel in) {
         this.x = in.readFloat();
         this.y = in.readFloat();
     }

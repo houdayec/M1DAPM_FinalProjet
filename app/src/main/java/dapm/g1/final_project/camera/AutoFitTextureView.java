@@ -1,4 +1,4 @@
-package dapm.g1.final_project;
+package dapm.g1.final_project.camera;
 
 /**
  * Created by Corentin on 5/14/2018.

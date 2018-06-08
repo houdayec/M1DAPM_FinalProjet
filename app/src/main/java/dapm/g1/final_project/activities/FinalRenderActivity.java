@@ -24,7 +24,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Surface;
 import android.widget.Button;
@@ -45,13 +44,13 @@ import java.util.Random;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import dapm.g1.final_project.CustomView.DrawingView;
-import dapm.g1.final_project.Line;
+import dapm.g1.final_project.custom_classes.CustomPointF;
+import dapm.g1.final_project.custom_classes.DrawingView;
+import dapm.g1.final_project.custom_classes.Line;
 import dapm.g1.final_project.MainActivity;
-import dapm.g1.final_project.PPointF;
-import dapm.g1.final_project.PathUtil;
+import dapm.g1.final_project.utils.PathUtils;
 import dapm.g1.final_project.R;
-import dapm.g1.final_project.myMediaExtractor;
+import dapm.g1.final_project.custom_classes.CustomMediaExtractor;
 
 public class FinalRenderActivity extends AppCompatActivity {
 
@@ -70,59 +69,52 @@ public class FinalRenderActivity extends AppCompatActivity {
     @BindView(R.id.backToMenuButton)
     Button mBackToMenuButton;
 
-    private static final float ZERO = 1e-15f;
+    /**
+     * VARIABLES
+     */
     private Uri uriData;
     private String fileManager;
     static int idFrame = 0;
 
-    private static final String TAG = "ExtractMpegFramesTest";
-    private static final boolean VERBOSE = false;           // lots of logging
+    private static final String TAG = "FinalRenderActivity";
+    private static final boolean VERBOSE = false;
+    private static String INPUT_FILE;
+    private static final int MAX_FRAMES = 100000000;
 
-    // where to find files (note: requires WRITE_EXTERNAL_STORAGE permission)
-    private static final File FILES_DIR = Environment.getExternalStorageDirectory();
-    private static String INPUT_FILE = "source.mp4";
-    private static final int MAX_FRAMES = 100000000;       // stop extracting after this many
-
-    static String direction = "Top";
-    static int sample = 1;
+    private static String direction = "Top";
+    private static int sample = 1;
     public static int indexRangePixels = 0;
 
     private static int[] finalPixels;
-    static int mWidth;
-    static int mHeight;
+    static int mWidth, mHeight;
 
     protected static Bitmap finalBmp;
     protected static Canvas canvas;
-    static Bitmap bmp;
-    static Bitmap bmp2 = null;
-    //static Bitmap interpolatedBmp;
+    static Bitmap bmp, bmp2;
 
     // Interpolation vars
     static boolean interpolate = false;
     static int interpolationSample;
 
+    // Jump frames vars
     static boolean jumpFrame = false;
     static ArrayList<String> frameSelected = new ArrayList<>();
 
-    private static PPointF[] tabPointsPath;
-    private static Path pointsPath;
+    private static CustomPointF[] tabPointsPath;
+    private static Path pointsPath, tangentesPath, tangentes2Path, selectPath, ptPath;
+
+    // Paints used for drawing in canvas
     private static Paint pointsPaint = DrawingView.customPaint(Color.GREEN,5);
-    private static Path tangentesPath;
     private static Paint tangentesPaint = DrawingView.customPaint(Color.rgb(255,0,150),5);
-    private static Path tangentes2Path;
     private static Paint tangentes2Paint = DrawingView.customPaint(Color.rgb(200,200,255),5);
-    private static Path selectPath;
     private static Paint selectPaint = DrawingView.customPaint(Color.rgb(255,200,0),1);
-    private static Path ptPath;
     private static Paint ptPaint = DrawingView.customPaint(Color.rgb(50,50,255),10);
-    private static int cursor;
+
+    private static int cursor, start, end;
     private static Line saveLine;
-    private static int start;
-    private static int end;
 
     private float duration;
-    int stackPixels;
-    int frameRate;
+    int stackPixels, frameRate;
 
     private FramesExtraction mFramesExtractionTask;
 
@@ -139,8 +131,8 @@ public class FinalRenderActivity extends AppCompatActivity {
         direction = getIntent().getStringExtra("direction");
 
         if(direction.equals("Custom")){
-            ArrayList<PPointF> lpoints = getIntent().getParcelableArrayListExtra("drawing");
-            tabPointsPath = new PPointF[lpoints.size()];
+            ArrayList<CustomPointF> lpoints = getIntent().getParcelableArrayListExtra("drawing");
+            tabPointsPath = new CustomPointF[lpoints.size()];
             lpoints.toArray(tabPointsPath);
             start = getIntent().getIntExtra("start",0);
             end = getIntent().getIntExtra("end",0);
@@ -151,7 +143,7 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         // Retrieving data and transform to uri
         uriData = Uri.parse(getIntent().getStringExtra("uri_video"));
-        fileManager = PathUtil.getPath(this, uriData);
+        fileManager = PathUtils.getPath(this, uriData);
         INPUT_FILE = fileManager.toString();
 
         // Initializing variables
@@ -165,7 +157,6 @@ public class FinalRenderActivity extends AppCompatActivity {
         lockUI(true);
 
         // Starting extraction
-
         mFramesExtractionTask = new FramesExtraction();
         mFramesExtractionTask.execute();
     }
@@ -245,7 +236,7 @@ public class FinalRenderActivity extends AppCompatActivity {
 
             try {
                 extractMpegFrames(INPUT_FILE);
-            } catch (IOException | myMediaExtractor.NoTrackSelectedException e) {
+            } catch (IOException | CustomMediaExtractor.NoTrackSelectedException e) {
                 e.printStackTrace();
             }
 
@@ -256,8 +247,6 @@ public class FinalRenderActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
 
-            //mProgressDialog.dismiss();
-            // finalBmp.setPixels(finalPixels, 0, mWidth, 0, 0,mWidth, mHeight);
             mImageViewAnamorphosis.setImageBitmap(finalBmp);
 
             Log.e("onPostExecute", "reached");
@@ -306,10 +295,10 @@ public class FinalRenderActivity extends AppCompatActivity {
          * it by adjusting the GL viewport to get letterboxing or pillarboxing, but generally if
          * you're extracting frames you don't want black bars.
          */
-        private void extractMpegFrames(String INPUT_FILE) throws IOException, myMediaExtractor.NoTrackSelectedException {
+        private void extractMpegFrames(String INPUT_FILE) throws IOException, CustomMediaExtractor.NoTrackSelectedException {
             MediaCodec decoder = null;
             FinalRenderActivity.CodecOutputSurface outputSurface = null;
-            myMediaExtractor extractor = null;
+            CustomMediaExtractor extractor = null;
             //int saveWidth = mWidth; //640;
             //  int saveHeight = mHeight;//480;
             //  Log.e("largeur ",String.valueOf(mWidth));
@@ -324,7 +313,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                     throw new FileNotFoundException("Unable to read " + inputFile);
                 }
 
-                extractor = new myMediaExtractor(inputFile.toString());
+                extractor = new CustomMediaExtractor(inputFile.toString());
                 int trackIndex = extractor.getTrackVideoIndex();
                 if (trackIndex < 0) {
                     throw new RuntimeException("No video track found in " + inputFile);
@@ -402,7 +391,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         /**
          * Work loop.
          */
-        void doExtract(myMediaExtractor extractor, int trackIndex, MediaCodec decoder,
+        void doExtract(CustomMediaExtractor extractor, int trackIndex, MediaCodec decoder,
                        FinalRenderActivity.CodecOutputSurface outputSurface) throws IOException {
             final int TIMEOUT_USEC = 10000;
             ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
@@ -535,7 +524,6 @@ public class FinalRenderActivity extends AppCompatActivity {
      * @param currentBmp
      * @param pixels
      */
-
     private static void createCustomAnamorphosis(Bitmap currentBmp, int[] pixels){
         cursor++;
         if (VERBOSE){
@@ -543,11 +531,8 @@ public class FinalRenderActivity extends AppCompatActivity {
             Log.d(TAG,"path size "+tabPointsPath.length);
             Log.d(TAG,"custom frame " + cursor);
         }
-        PPointF pt;
+        CustomPointF pt;
         if (cursor == 1) {
-            if (VERBOSE) {
-                Log.d(TAG, "init cur");
-            }
             tangentesPath = new Path();
             if(VERBOSE) {
                 pointsPath = new Path();
@@ -712,7 +697,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
-    private static PPointF calcTangExtremum(float a, float b, float at, int yval, boolean invert) {
+    private static CustomPointF calcTangExtremum(float a, float b, float at, int yval, boolean invert) {
         float xmax = (invert)? mHeight : mWidth;
         float x = 0;
         float y = 0;
@@ -732,10 +717,10 @@ public class FinalRenderActivity extends AppCompatActivity {
             x = (yval==0)? 0 : xmax;
             y = b;
         }
-        return (invert)? new PPointF(y, x):new PPointF(x, y);
+        return (invert)? new CustomPointF(y, x):new CustomPointF(x, y);
     }
 
-    private static void calcTangenteP(PPointF p1,PPointF p2, PPointF p3, boolean invert, Bitmap currentBmp, int[] pixels) {
+    private static void calcTangenteP(CustomPointF p1, CustomPointF p2, CustomPointF p3, boolean invert, Bitmap currentBmp, int[] pixels) {
         if (!invert && ((int)Math.abs(p1.x-p2.x)==0 || (int)Math.abs(p1.x-p3.x)==0 || (int)Math.abs(p2.x-p3.x)==0)) {
             calcTangenteP(p1, p2, p3, true,currentBmp,pixels);
             return;
@@ -774,8 +759,8 @@ public class FinalRenderActivity extends AppCompatActivity {
         if (VERBOSE)
             Log.d(TAG,"tangente:y="+at+"*(x-"+p2.x+")+"+p2.y);
 
-        PPointF pt1 = calcTangExtremum(p2.x, p2.y, at, 0, invert);
-        PPointF pt2 = calcTangExtremum(p2.x, p2.y, at, (invert)? mWidth : mHeight, invert);
+        CustomPointF pt1 = calcTangExtremum(p2.x, p2.y, at, 0, invert);
+        CustomPointF pt2 = calcTangExtremum(p2.x, p2.y, at, (invert)? mWidth : mHeight, invert);
         if (VERBOSE)
             Log.d(TAG,pt1+" "+pt2);
 
@@ -783,8 +768,8 @@ public class FinalRenderActivity extends AppCompatActivity {
 
         if (VERBOSE)
             Log.d(TAG,"tangente perpen:y="+atp+"*(x)+"+p2.y);
-        PPointF ptp1 = (atp != 0)? calcTangExtremum(p2.x, p2.y, atp, 0, invert) : ((invert)? new PPointF(0, p2.x) : new PPointF(p2.x, 0));
-        PPointF ptp2 = (atp != 0)? calcTangExtremum(p2.x, p2.y, atp, (invert)? mWidth : mHeight, invert) : ((invert)? new PPointF(mWidth, p2.x) : new PPointF(p2.x, mHeight));
+        CustomPointF ptp1 = (atp != 0)? calcTangExtremum(p2.x, p2.y, atp, 0, invert) : ((invert)? new CustomPointF(0, p2.x) : new CustomPointF(p2.x, 0));
+        CustomPointF ptp2 = (atp != 0)? calcTangExtremum(p2.x, p2.y, atp, (invert)? mWidth : mHeight, invert) : ((invert)? new CustomPointF(mWidth, p2.x) : new CustomPointF(p2.x, mHeight));
         if (VERBOSE)
             Log.d(TAG,ptp1+" "+ptp2);
 
@@ -1545,6 +1530,9 @@ public class FinalRenderActivity extends AppCompatActivity {
         return newBitmap;
     }
 
+    /**
+     * Method that handles back button user click
+     */
     @Override
     public void onBackPressed() {
         super.onBackPressed();

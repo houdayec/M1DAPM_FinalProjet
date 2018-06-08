@@ -1,4 +1,4 @@
-package dapm.g1.final_project.CustomView;
+package dapm.g1.final_project.custom_classes;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -7,16 +7,12 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import dapm.g1.final_project.Line;
-import dapm.g1.final_project.PPointF;
 
 /**
  * Created by mickael alos on 30/05/2018.
@@ -44,9 +40,9 @@ public class DrawingView extends View {
     private Path mPath, mPointsPath, mCursorPath, mCirclePath, mFramePath;
     private Paint mPaint, mPointsPaint, mCursorPaint, mCirclePaint, mFramePaint, mRectPaint;
 
-    private List<PPointF> listPoints;
-    private ArrayList<PPointF> path;
-    private PPointF[] frame, diagBase, diagTemp;
+    private List<CustomPointF> listPoints;
+    private ArrayList<CustomPointF> path;
+    private CustomPointF[] frame, diagBase, diagTemp;
 
     /**
      * CUSTOM CONSTRUCTOR
@@ -103,11 +99,11 @@ public class DrawingView extends View {
         System.out.println("size changed "+w+" "+h+" "+oldw+" "+oldh);
         width = w;
         height = h;
-        frame = new PPointF[]{
-                new PPointF(0, height * FRAME_RATIO), new PPointF(width, height * FRAME_RATIO), //bas
-                new PPointF(0, height * (1 - FRAME_RATIO)), new PPointF(width, height * (1 - FRAME_RATIO)), //haut
-                new PPointF(width * FRAME_RATIO, 0), new PPointF(width * FRAME_RATIO, height), //droite
-                new PPointF(width * (1 - FRAME_RATIO), 0), new PPointF(Math.round(width * (1 - FRAME_RATIO)), height) //gauche
+        frame = new CustomPointF[]{
+                new CustomPointF(0, height * FRAME_RATIO), new CustomPointF(width, height * FRAME_RATIO), //bas
+                new CustomPointF(0, height * (1 - FRAME_RATIO)), new CustomPointF(width, height * (1 - FRAME_RATIO)), //haut
+                new CustomPointF(width * FRAME_RATIO, 0), new CustomPointF(width * FRAME_RATIO, height), //droite
+                new CustomPointF(width * (1 - FRAME_RATIO), 0), new CustomPointF(Math.round(width * (1 - FRAME_RATIO)), height) //gauche
         };
         for (int i = 0; i < frame.length; i++) {
             mFramePath.moveTo(frame[i].x, frame[i].y);
@@ -162,7 +158,7 @@ public class DrawingView extends View {
     /**
      * Custom methods to get touch events
      */
-    private void touch_start(PPointF p) {
+    private void touch_start(CustomPointF p) {
         /*clean*/
         mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         mCanvas = new Canvas(mBitmap);
@@ -170,13 +166,13 @@ public class DrawingView extends View {
         addPoint(p);
     }
 
-    private void touch_move(PPointF p) {
+    private void touch_move(CustomPointF p) {
         if (p.x<0 || p.x>width || p.y<0 || p.y>height) return;
         float d = 0;
         boolean add = false;
         int lsize = listPoints.size();
         if (lsize>0) {
-            PPointF lastP = listPoints.get(lsize-1);
+            CustomPointF lastP = listPoints.get(lsize-1);
             d = lastP.distanceBetween(p);
             if (d >= TOUCH_TOLERANCE) {
                 System.out.println("touch tolerance "+d+" s "+lsize);
@@ -198,11 +194,11 @@ public class DrawingView extends View {
             float y = event.getY();
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
-                    touch_start(new PPointF(x, y));
+                    touch_start(new CustomPointF(x, y));
                     invalidate();
                     break;
                 case MotionEvent.ACTION_MOVE:
-                    touch_move(new PPointF(x, y));
+                    touch_move(new CustomPointF(x, y));
                     invalidate();
                     break;
                 case MotionEvent.ACTION_UP:
@@ -224,39 +220,39 @@ public class DrawingView extends View {
             mRect = null;
             listPoints = new ArrayList<>();
             path = new ArrayList<>();
-            diagBase = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
-            diagTemp = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
+            diagBase = new CustomPointF[]{new CustomPointF(0f, 0f), new CustomPointF(0f, 0f)};
+            diagTemp = new CustomPointF[]{new CustomPointF(0f, 0f), new CustomPointF(0f, 0f)};
         } else if (listPoints.size() >= 2) {
             System.out.println("end capture");
-            PPointF lastP = listPoints.get(listPoints.size()-1);
+            CustomPointF lastP = listPoints.get(listPoints.size()-1);
             int[] capIds = getCapIds(lastP);
             System.out.println("last point : startcap "+capIds[1]+" endcap "+capIds[0]);
             if (startcap == capIds[1] && endcap == capIds[0]) {
                 System.out.println("last point ok");
                 switch (startcap) {
                     case 1:
-                        addExtremum(1, new PPointF(listPoints.get(0).x, height), new PPointF(lastP.x, 0));
+                        addExtremum(1, new CustomPointF(listPoints.get(0).x, height), new CustomPointF(lastP.x, 0));
                         break;
                     case 2:
-                        addExtremum(1, new PPointF(listPoints.get(0).x, 0), new PPointF(lastP.x, height));
+                        addExtremum(1, new CustomPointF(listPoints.get(0).x, 0), new CustomPointF(lastP.x, height));
                         break;
                     case 3:
-                        addExtremum(0, new PPointF(width, listPoints.get(0).y), new PPointF(0, lastP.y));
+                        addExtremum(0, new CustomPointF(width, listPoints.get(0).y), new CustomPointF(0, lastP.y));
                         break;
                     case 4:
-                        addExtremum(new PPointF(width, height), new PPointF(0, 0));
+                        addExtremum(new CustomPointF(width, height), new CustomPointF(0, 0));
                         break;
                     case 5:
-                        addExtremum(new PPointF(width, 0), new PPointF(0, height));
+                        addExtremum(new CustomPointF(width, 0), new CustomPointF(0, height));
                         break;
                     case 6:
-                        addExtremum(0, new PPointF(0, listPoints.get(0).y), new PPointF(width, lastP.y));
+                        addExtremum(0, new CustomPointF(0, listPoints.get(0).y), new CustomPointF(width, lastP.y));
                         break;
                     case 7:
-                        addExtremum(new PPointF(0, height), new PPointF(width, 0));
+                        addExtremum(new CustomPointF(0, height), new CustomPointF(width, 0));
                         break;
                     case 8:
-                        addExtremum(new PPointF(0, 0), new PPointF(width, height));
+                        addExtremum(new CustomPointF(0, 0), new CustomPointF(width, height));
                         break;
                 }
                 System.out.println("extremum added");
@@ -294,7 +290,7 @@ public class DrawingView extends View {
         return capIds;
     }
 
-    private void addExtremum(int direction, PPointF p1, PPointF p2) {
+    private void addExtremum(int direction, CustomPointF p1, CustomPointF p2) {
         if (listPoints.get(0).get(direction) != p1.get(direction)) {
             System.out.println("addExtremum norm start");
             Path tempPath = new Path();
@@ -304,7 +300,7 @@ public class DrawingView extends View {
             mPointsPath.set(tempPath);
             listPoints.add(0, p1);
         }
-        PPointF lastP = listPoints.get(listPoints.size()-1);
+        CustomPointF lastP = listPoints.get(listPoints.size()-1);
         if (lastP.get(direction) != p2.get(direction)){
             System.out.println("addExtremum norm end");
             mPointsPath.lineTo(p2.x,p2.y);
@@ -312,7 +308,7 @@ public class DrawingView extends View {
         }
     }
 
-    private void addExtremum(PPointF p1, PPointF p2) {
+    private void addExtremum(CustomPointF p1, CustomPointF p2) {
         if (listPoints.get(0).x != p1.x || listPoints.get(0).y != p1.y) {
             System.out.println("addExtremum diag start");
             Path tempPath = new Path();
@@ -322,7 +318,7 @@ public class DrawingView extends View {
             mPointsPath.set(tempPath);
             listPoints.add(0, p1);
         }
-        PPointF lastP = listPoints.get(listPoints.size()-1);
+        CustomPointF lastP = listPoints.get(listPoints.size()-1);
         if (lastP.x != p2.x || lastP.y != p2.y) {
             System.out.println("addExtremum diag end");
             mPointsPath.lineTo(p2.x,p2.y);
@@ -330,17 +326,17 @@ public class DrawingView extends View {
         }
     }
 
-    private List<PPointF> extractInterestingPoints(){
+    private List<CustomPointF> extractInterestingPoints(){
         System.out.println("extraction des points d'interets");
-        List<PPointF> interestingPoints = new ArrayList<>();
+        List<CustomPointF> interestingPoints = new ArrayList<>();
         int lsize = listPoints.size();
         System.out.println("listPoints size : "+lsize);
         if (lsize>=3) {
             float cnt = 0;
             interestingPoints.add(listPoints.get(0));
             for(int i = 2; i<lsize-1;i++){
-                PPointF p = listPoints.get(i);
-                float a = PPointF.angle(listPoints.get(i-2),listPoints.get(i-1),p);
+                CustomPointF p = listPoints.get(i);
+                float a = CustomPointF.angle(listPoints.get(i-2),listPoints.get(i-1),p);
                 System.out.println(a);
                 if (a>4)
                     interestingPoints.add(p);
@@ -358,15 +354,15 @@ public class DrawingView extends View {
         return interestingPoints;
     }
 
-    private ArrayList<PPointF> initBezier(){
+    private ArrayList<CustomPointF> initBezier(){
         if (listPoints.size()>0) {
-            List<PPointF> interestingPoints = extractInterestingPoints();
+            List<CustomPointF> interestingPoints = extractInterestingPoints();
             if (interestingPoints.size()>=2) {
                 System.out.println("init bezier");
                 mPath.reset();
                 float ratioWidthHomothetie = (float) realWidth / width;
                 float ratioHeightHomothetie = (float) realHeight / height;
-                ArrayList<PPointF> B = new ArrayList<>();
+                ArrayList<CustomPointF> B = new ArrayList<>();
                 int n = interestingPoints.size() - 1;
                 if (n > 0) {
                     float u;
@@ -376,13 +372,13 @@ public class DrawingView extends View {
                         u = (float) cnt / step;
                         for (int i = 0; i < n + 1; i++) {
                             double b = (((factorialOf(n)) / ((factorialOf(i)) * (factorialOf(n - i)))) * (Math.pow(u, i)) * (Math.pow((1 - u), (n - i))));
-                            PPointF p = interestingPoints.get(i);
+                            CustomPointF p = interestingPoints.get(i);
                             x = (float) (x + b * p.x);
                             y = (float) (y + b * p.y);
                         }
                         if (B.size() == 0) mPath.moveTo(x, y);
                         else mPath.lineTo(x, y);
-                        B.add(new PPointF(x * ratioWidthHomothetie, y * ratioHeightHomothetie));
+                        B.add(new CustomPointF(x * ratioWidthHomothetie, y * ratioHeightHomothetie));
                     }
                 }
                 System.out.println("result besier : " + B.size() + " points");
@@ -401,7 +397,7 @@ public class DrawingView extends View {
         return factorial;
     }
 
-    private void addPoint(PPointF p) {
+    private void addPoint(CustomPointF p) {
         if (cap) {
             int lentp = listPoints.size();
             if (lentp == 0) {
@@ -430,7 +426,7 @@ public class DrawingView extends View {
             if (startcap != 0 && acceptPoint (p)) {
                 refreshCursorCap(p);
                 if (lentp > 0) {
-                    PPointF lastP = listPoints.get(listPoints.size()-1);
+                    CustomPointF lastP = listPoints.get(listPoints.size()-1);
                     mPointsPath.quadTo(lastP.x, lastP.y, (p.x + lastP.x) / 2, (p.y + lastP.y) / 2);
                 }
                 mCirclePath.reset();
@@ -440,10 +436,10 @@ public class DrawingView extends View {
         }
     }
 
-    private boolean acceptPoint(PPointF p) {
+    private boolean acceptPoint(CustomPointF p) {
         if (listPoints.size() == 0)
             return true;
-        PPointF lastP = listPoints.get(listPoints.size()-1);
+        CustomPointF lastP = listPoints.get(listPoints.size()-1);
         if (startcap == 1 && p.y<lastP.y)
             return true;
         else if (startcap ==2 && p.y>lastP.y)
@@ -471,7 +467,7 @@ public class DrawingView extends View {
         return false;
     }
 
-    private void refreshDiag(PPointF p,boolean invert){
+    private void refreshDiag(CustomPointF p, boolean invert){
         System.out.println("refresh Diag :"+p+" "+invert);
         float at = (float)height/width;
         System.out.println(at);
@@ -494,7 +490,7 @@ public class DrawingView extends View {
         System.out.println(diagTemp[0]+" "+ diagTemp[1]);
     }
 
-    private void refreshCursorCap(PPointF p) {
+    private void refreshCursorCap(CustomPointF p) {
         mCursorPath.reset();
         if (startcap == 1 || startcap == 2) {
             mCursorPath.moveTo(0, p.y);
@@ -510,7 +506,7 @@ public class DrawingView extends View {
         }
     }
 
-    public ArrayList<PPointF> getPath() {
+    public ArrayList<CustomPointF> getPath() {
         if (path==null) return null;
         System.out.println(path.size());
         if (path.size()==0) return null;

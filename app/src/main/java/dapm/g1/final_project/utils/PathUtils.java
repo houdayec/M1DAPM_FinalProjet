@@ -1,4 +1,4 @@
-package dapm.g1.final_project;
+package dapm.g1.final_project.utils;
 
 /**
  * Created by Corentin on 4/25/2018.
@@ -20,7 +20,7 @@ import android.provider.MediaStore;
  * Created by Aki on 1/7/2017.
  */
 
-public class PathUtil {
+public class PathUtils {
     /**
      * Get a file path from a Uri. This will get the the path for Storage Access
      * Framework Documents, as well as the _data field for the MediaStore and
