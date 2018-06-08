@@ -12,7 +12,6 @@ import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,47 +22,39 @@ import dapm.g1.final_project.PPointF;
  * Created by mickael alos on 30/05/2018.
  */
 public class DrawingView extends View {
+
+    /**
+     * INTERN VARIABLES
+     */
+    private static final float TOUCH_TOLERANCE = 20;
+    private static final float FRAME_RATIO = 0.90f;
+
     private boolean eventEnabled;
 
-    private int width;
-    private int height;
-    private int realWidth;
-    private int realHeight;
+    private int width, height, realWidth, realHeight;
+    private int step, startcap, endcap;
+
+    private boolean cap;
+
     private Bitmap mBitmap;
     private Paint mBitmapPaint;
     private Canvas mCanvas;
 
-    private Path mPath;
-    private Paint mPaint;
-
-    private Path mPointsPath;
-    private Paint mPointsPaint;
-
-    private Path mCursorPath;
-    private Paint mCursorPaint;
-
-    private Path mCirclePath;
-    private Paint mCirclePaint;
-
     private RectF mRect;
-    private Paint mRectPaint;
-
-    private static final float FRAME_RATIO = 0.90f;
-    private PPointF[] frame;
-    private Path mFramePath;
-    private Paint mFramePaint;
+    private Path mPath, mPointsPath, mCursorPath, mCirclePath, mFramePath;
+    private Paint mPaint, mPointsPaint, mCursorPaint, mCirclePaint, mFramePaint, mRectPaint;
 
     private List<PPointF> listPoints;
     private ArrayList<PPointF> path;
-    private PPointF[] diagbase;
-    private PPointF[] diagtemp;
-    private boolean cap;
-    private int startcap;
-    private int endcap;
-    private static final float TOUCH_TOLERANCE = 20;
+    private PPointF[] frame, diagBase, diagTemp;
 
-    private int step;
-
+    /**
+     * CUSTOM CONSTRUCTOR
+     * @param c
+     * @param step
+     * @param rw
+     * @param rh
+     */
     public DrawingView(Context c,int step,int rw,int rh) {
         super(c);
         System.out.println("Step : "+step);
@@ -99,6 +90,13 @@ public class DrawingView extends View {
         return paint;
     }
 
+    /**
+     * Method that manages event when size of view is changed
+     * @param w
+     * @param h
+     * @param oldw
+     * @param oldh
+     */
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -161,6 +159,9 @@ public class DrawingView extends View {
         canvas.drawPath(mCirclePath, mCirclePaint);
     }
 
+    /**
+     * Custom methods to get touch events
+     */
     private void touch_start(PPointF p) {
         /*clean*/
         mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -223,8 +224,8 @@ public class DrawingView extends View {
             mRect = null;
             listPoints = new ArrayList<>();
             path = new ArrayList<>();
-            diagbase = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
-            diagtemp = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
+            diagBase = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
+            diagTemp = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
         } else if (listPoints.size() >= 2) {
             System.out.println("end capture");
             PPointF lastP = listPoints.get(listPoints.size()-1);
@@ -413,15 +414,15 @@ public class DrawingView extends View {
                 endcap = capIds[1];
                 System.out.println("first points : startcap "+startcap+" endcap "+endcap);
                 if (startcap == 4 || startcap == 8) {
-                    diagbase[0].set(0, height);
-                    diagbase[1].set(width, 0);
-                    System.out.println(diagbase[0]+" "+diagbase[1]);
+                    diagBase[0].set(0, height);
+                    diagBase[1].set(width, 0);
+                    System.out.println(diagBase[0]+" "+ diagBase[1]);
                     refreshDiag(p, true);
                 }
                 else if (startcap == 5 || startcap == 7) {
-                    diagbase[0].set(0, 0);
-                    diagbase[1].set(width, height);
-                    System.out.println(diagbase[0]+" "+diagbase[1]);
+                    diagBase[0].set(0, 0);
+                    diagBase[1].set(width, height);
+                    System.out.println(diagBase[0]+" "+ diagBase[1]);
                     refreshDiag(p, false);
                 }
                 drawEndArea();
@@ -449,21 +450,21 @@ public class DrawingView extends View {
             return true;
         else if (startcap ==3 && p.x<lastP.x)
             return true;
-        else if (startcap ==4 && Line.position(diagtemp[0], diagtemp[1], p)<0) {
+        else if (startcap ==4 && Line.position(diagTemp[0], diagTemp[1], p)<0) {
             refreshDiag(p, true);
             return true;
         }
-        else if (startcap ==5 && Line.position(diagtemp[0], diagtemp[1], p)>0) {
+        else if (startcap ==5 && Line.position(diagTemp[0], diagTemp[1], p)>0) {
             refreshDiag(p, false);
             return true;
         }
         else if (startcap ==6 && p.x>lastP.x)
             return true;
-        else if (startcap ==7 && Line.position(diagtemp[0], diagtemp[1], p)<0) {
+        else if (startcap ==7 && Line.position(diagTemp[0], diagTemp[1], p)<0) {
             refreshDiag(p, false);
             return true;
         }
-        else if (startcap ==8 && Line.position(diagtemp[0], diagtemp[1], p)>0) {
+        else if (startcap ==8 && Line.position(diagTemp[0], diagTemp[1], p)>0) {
             refreshDiag(p, true);
             return true;
         }
@@ -476,21 +477,21 @@ public class DrawingView extends View {
         System.out.println(at);
         if (invert)
             at*=-1;
-        float xdiff = p.x-Line.calcX(p.y,0, diagbase[0].y,at);
-        float ydiff = p.y-Line.calcY(p.x,0, diagbase[0].y,at);
+        float xdiff = p.x-Line.calcX(p.y,0, diagBase[0].y,at);
+        float ydiff = p.y-Line.calcY(p.x,0, diagBase[0].y,at);
         if (xdiff<0) {
-            diagtemp[0].x = diagbase[0].x;
-            diagtemp[0].y = diagbase[0].y + ydiff;
-            diagtemp[1].x = diagbase[1].x + xdiff;
-            diagtemp[1].y = diagbase[1].y;
+            diagTemp[0].x = diagBase[0].x;
+            diagTemp[0].y = diagBase[0].y + ydiff;
+            diagTemp[1].x = diagBase[1].x + xdiff;
+            diagTemp[1].y = diagBase[1].y;
         }
         else if (xdiff>0) {
-            diagtemp[0].x = diagbase[0].x + xdiff;
-            diagtemp[0].y = diagbase[0].y;
-            diagtemp[1].x = diagbase[1].x;
-            diagtemp[1].y = diagbase[1].y + ydiff;
+            diagTemp[0].x = diagBase[0].x + xdiff;
+            diagTemp[0].y = diagBase[0].y;
+            diagTemp[1].x = diagBase[1].x;
+            diagTemp[1].y = diagBase[1].y + ydiff;
         }
-        System.out.println(diagtemp[0]+" "+diagtemp[1]);
+        System.out.println(diagTemp[0]+" "+ diagTemp[1]);
     }
 
     private void refreshCursorCap(PPointF p) {
@@ -504,8 +505,8 @@ public class DrawingView extends View {
             mCursorPath.lineTo(p.x,height);
         }
         else if (startcap==5 || startcap==7 || startcap==4 || startcap==8){
-            mCursorPath.moveTo(diagtemp[0].x,diagtemp[0].y);
-            mCursorPath.lineTo(diagtemp[1].x,diagtemp[1].y);
+            mCursorPath.moveTo(diagTemp[0].x, diagTemp[0].y);
+            mCursorPath.lineTo(diagTemp[1].x, diagTemp[1].y);
         }
     }
 

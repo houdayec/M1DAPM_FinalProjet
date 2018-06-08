@@ -4,12 +4,14 @@ package dapm.g1.final_project;
  * Created by mickael alos on 03/06/2018.
  */
 public class Line {
-    private float at;
-    private float a;
-    private float b;
-    private PPointF p1;
-    private PPointF p2;
 
+    private float at, a, b;
+
+    private PPointF p1, p2;
+
+    /**
+     * CONSTRUCTORS
+     */
     public Line(PPointF p1, PPointF p2){
         if (p1.x < p2.x){
             this.p1 = p1;
@@ -40,6 +42,9 @@ public class Line {
         return (p2.x - p1.x) * (m.y - p1.y) - (p2.y - p1.y) * (m.x - p1.x);
     }
 
+    /**
+     * METHODS
+     */
     public float calcX(float y) {
         return calcX(y,a,b,at);
     }
@@ -80,6 +85,9 @@ public class Line {
         return p2;
     }
 
+    /**
+     * OVERRIDED METHODS
+     */
     @Override
     public String toString() {
         return "Line{" +

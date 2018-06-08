@@ -34,7 +34,9 @@
                 android:layout_marginBottom="15dp"
                 android:textColor="@color/white"
                 android:background="@color/colorPrimary"
-                android:textSize="16sp"/>
+                android:textSize="16sp"
+                android:paddingLeft="40dp"
+                android:drawableLeft="@drawable/ic_folder_upload_white_36dp"/>
             <Button
                 android:id="@+id/record_video_button"
                 android:layout_width="300dp"
@@ -44,7 +46,9 @@
                 android:textColor="@color/white"
                 android:text="@string/record_video_button"
                 android:background="@color/colorPrimary"
-                android:textSize="16sp"/>
+                android:textSize="16sp"
+                android:paddingLeft="40dp"
+                android:drawableLeft="@drawable/ic_record_rec_white_36dp"/>
 
         </LinearLayout>
 

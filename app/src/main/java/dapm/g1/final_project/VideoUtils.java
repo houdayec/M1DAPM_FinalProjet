@@ -14,6 +14,11 @@ import java.io.IOException;
  */
 public class VideoUtils {
 
+    /**
+     * Static method that allows to get the frame rate of a specific video
+     * @param path
+     * @return
+     */
     public static int getFrameRateVideo(String path){
         MediaExtractor extractor = new MediaExtractor();
         int frameRate = 24; //may be default

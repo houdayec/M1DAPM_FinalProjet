@@ -11,6 +11,7 @@ import java.io.Serializable;
  * Created by mickael alos on 30/05/2018.
  */
 public class PPointF extends PointF implements Parcelable{
+
     public PPointF() {
         super();
     }
