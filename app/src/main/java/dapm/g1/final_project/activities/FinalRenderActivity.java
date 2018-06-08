@@ -570,6 +570,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
         else {
             calcSelectPixels(saveLine,null,currentBmp,pixels);
+            tangentesPath.reset();
         }
     }
 

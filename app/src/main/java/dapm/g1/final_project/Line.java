@@ -32,6 +32,14 @@ public class Line {
         this.p2 = p2;
     }
 
+    public float position(PPointF m) {
+        return position(p1,p2,m);
+    }
+
+    public static float position(PPointF p1,PPointF p2,PPointF m) {
+        return (p2.x - p1.x) * (m.y - p1.y) - (p2.y - p1.y) * (m.x - p1.x);
+    }
+
     public float calcX(float y) {
         return calcX(y,a,b,at);
     }
@@ -58,10 +66,6 @@ public class Line {
 
     public float getA() {
         return a;
-    }
-
-    public void setA(float a) {
-        this.a = a;
     }
 
     public float getB() {
