@@ -11,6 +11,7 @@ import java.io.Serializable;
  * Created by mickael alos on 30/05/2018.
  */
 public class PPointF extends PointF implements Parcelable{
+
     public PPointF() {
         super();
     }
@@ -28,7 +29,23 @@ public class PPointF extends PointF implements Parcelable{
     }
 
     public float distanceBetween(PPointF p){
-        return (float)Math.sqrt(Math.pow(x-p.x,2)+Math.pow(y-p.y,2));
+        return norm(x-p.x,y-p.y);
+    }
+
+    public static float distanceBetween(PPointF p1, PPointF p2) {
+        return norm(p1.x-p2.x,p1.y-p2.y);
+    }
+
+    private static float norm(float dx, float dy){
+        return (float)Math.sqrt(Math.pow(dx,2)+Math.pow(dy,2));
+    }
+
+    public static float angle(PPointF p1, PPointF pm, PPointF p2){
+        float dxU = p1.x-pm.x;
+        float dyU = p1.y-pm.y;
+        float dxV = pm.x-p2.x;
+        float dyV = pm.y-p2.y;
+        return (float)Math.toDegrees(Math.acos((dxU*dxV+dyU*dyV)/(norm(dxU,dyU)*norm(dxV,dyV))));
     }
 
     public PPointF getInvert() {

@@ -1,7 +1,6 @@
 package dapm.g1.final_project;
 
 import android.Manifest;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -10,8 +9,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -19,7 +16,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dapm.g1.final_project.activities.PreviewVideoActivity;
-import dapm.g1.final_project.activities.TypeActivity;
 import wseemann.media.FFmpegMediaMetadataRetriever;
 
 public class MainActivity extends AppCompatActivity {
@@ -33,17 +29,25 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.record_video_button)
     Button recordVideoButton;
 
-    private String fileManager;
-    private String duration;
-    private ProgressDialog effectProgressDialog;
+    /**
+     * UTILS VARS
+     */
+    private String fileManager, duration;
     private FFmpegMediaMetadataRetriever mediaMetadataRetriever;
     private double intervalRefresh;
 
+    /**
+     * REQUEST VALUES
+     */
     static final int REQUEST_VIDEO_CAPTURE = 1;
     static final int REQUEST_READ_EXTERNAL_STORAGE = 100;
     static final int REQUEST_TAKE_GALLERY_VIDEO = 200;
     static final int REQUEST_WRITE_EXTERNAL_STORAGE = 201;
 
+    /**
+     * METHOD TO INITIALIZE THE ACTIVITY
+     * @param savedInstanceState
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,12 +91,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //TODO REMOVE ?
-    public void switchToNextActivity(){
-        Intent nextActivityIntent = new Intent(this, TypeActivity.class);
-        startActivity(nextActivityIntent);
-    }
-
+    /**
+     * Method called when user press return button
+     */
     @Override
     public void onBackPressed() {
         super.onBackPressed();
@@ -106,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        // If the user wants to record a new video
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
             Intent intentPreview = new Intent(this, PreviewVideoActivity.class);
             Bundle bundleArgs = new Bundle();
@@ -114,35 +116,25 @@ public class MainActivity extends AppCompatActivity {
             intentPreview.putExtras(bundleArgs);
             startActivity(intentPreview);
         }
+
+        // If the user wants to use a video of his gallery
         if (requestCode == REQUEST_TAKE_GALLERY_VIDEO && resultCode == RESULT_OK) {
-            Toast.makeText(this, "RESULT", Toast.LENGTH_SHORT).show();
-
             fileManager = PathUtil.getPath(this, intent.getData());
-            System.out.println(fileManager);
-            Log.e("main",intent.getData().toString());
-            Log.e("main2",fileManager);
 
-            //Log.e("path", pathSelectedVideo);
-            Toast.makeText(this, fileManager, Toast.LENGTH_SHORT).show();
             if (fileManager != null) {
-                //TODO
                 mediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
                 mediaMetadataRetriever.setDataSource(fileManager);
 
+                // Video duration
                 duration = mediaMetadataRetriever.extractMetadata(FFmpegMediaMetadataRetriever.METADATA_KEY_DURATION);
-                Log.e("duration", duration);
 
-                // Create a Linear Layout for each contact?
-                //llay = new LinearLayout(this);
-                //llay.setOrientation(LinearLayout.HORIZONTAL);
-
+                // Video frame per second
                 int numberFrames = VideoUtils.getFrameRateVideo(fileManager);
-                System.out.println("The video has a " + numberFrames + " frames / second");
 
+                // Refresh rate
                 intervalRefresh = 1000000/numberFrames;
 
-                //new FramesExtraction().execute();
-
+                // Change activity to the preview of selected video
                 Intent intentPreview = new Intent(this, PreviewVideoActivity.class);
                 Bundle bundleArgs = new Bundle();
                 bundleArgs.putString("uri_video", intent.getData().toString());
@@ -150,8 +142,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intentPreview);
 
             }
-
-
         }
     }
 
@@ -185,7 +175,4 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
     }
-
-
-
 }

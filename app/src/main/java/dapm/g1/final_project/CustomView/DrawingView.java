@@ -7,10 +7,11 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,46 +22,42 @@ import dapm.g1.final_project.PPointF;
  * Created by mickael alos on 30/05/2018.
  */
 public class DrawingView extends View {
+
+    /**
+     * INTERN VARIABLES
+     */
+    private static final float TOUCH_TOLERANCE = 20;
+    private static final float FRAME_RATIO = 0.90f;
+
     private boolean eventEnabled;
 
-    private int width;
-    private int height;
-    private int realWidth;
-    private int realHeight;
+    private int width, height, realWidth, realHeight;
+    private int step, startcap, endcap;
+
+    private boolean cap;
+
     private Bitmap mBitmap;
     private Paint mBitmapPaint;
     private Canvas mCanvas;
 
-    private Path mPath;
-    private Paint mPaint;
-
-    private Path mPointsPath;
-    private Paint mPointsPaint;
-
-    private Path mCursorPath;
-    private Paint mCursorPaint;
-
-    private Path mCirclePath;
-    private Paint mCirclePaint;
-
-    private static final float FRAME_RATIO = 0.90f;
-    private PPointF[] frame;
-    private Path mFramePath;
-    private Paint mFramePaint;
+    private RectF mRect;
+    private Path mPath, mPointsPath, mCursorPath, mCirclePath, mFramePath;
+    private Paint mPaint, mPointsPaint, mCursorPaint, mCirclePaint, mFramePaint, mRectPaint;
 
     private List<PPointF> listPoints;
     private ArrayList<PPointF> path;
-    private PPointF[] diagbase;
-    private PPointF[] diagtemp;
-    private boolean cap;
-    private int startcap;
-    private int endcap;
-    private static final float TOUCH_TOLERANCE = 50;
+    private PPointF[] frame, diagBase, diagTemp;
 
-    private int step;
-
+    /**
+     * CUSTOM CONSTRUCTOR
+     * @param c
+     * @param step
+     * @param rw
+     * @param rh
+     */
     public DrawingView(Context c,int step,int rw,int rh) {
         super(c);
+        System.out.println("Step : "+step);
         realHeight = rh;
         realWidth = rw;
         eventEnabled = false;
@@ -76,6 +73,8 @@ public class DrawingView extends View {
         mCirclePath = new Path();
         mFramePaint = customPaint(Color.rgb(46,204,113), 5);
         mFramePath = new Path();
+        mRectPaint = new Paint();
+        mRectPaint.setColor(Color.argb(127,255,240,0));
         this.step = step;
     }
 
@@ -91,6 +90,13 @@ public class DrawingView extends View {
         return paint;
     }
 
+    /**
+     * Method that manages event when size of view is changed
+     * @param w
+     * @param h
+     * @param oldw
+     * @param oldh
+     */
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -98,10 +104,10 @@ public class DrawingView extends View {
         width = w;
         height = h;
         frame = new PPointF[]{
-                new PPointF(0, height * FRAME_RATIO), new PPointF(width, height * FRAME_RATIO),
-                new PPointF(0, height * (1 - FRAME_RATIO)), new PPointF(width, height * (1 - FRAME_RATIO)),
-                new PPointF(width * FRAME_RATIO, 0), new PPointF(width * FRAME_RATIO, height),
-                new PPointF(width * (1 - FRAME_RATIO), 0), new PPointF(Math.round(width * (1 - FRAME_RATIO)), height)
+                new PPointF(0, height * FRAME_RATIO), new PPointF(width, height * FRAME_RATIO), //bas
+                new PPointF(0, height * (1 - FRAME_RATIO)), new PPointF(width, height * (1 - FRAME_RATIO)), //haut
+                new PPointF(width * FRAME_RATIO, 0), new PPointF(width * FRAME_RATIO, height), //droite
+                new PPointF(width * (1 - FRAME_RATIO), 0), new PPointF(Math.round(width * (1 - FRAME_RATIO)), height) //gauche
         };
         for (int i = 0; i < frame.length; i++) {
             mFramePath.moveTo(frame[i].x, frame[i].y);
@@ -112,10 +118,40 @@ public class DrawingView extends View {
         mCanvas = new Canvas(mBitmap);
     }
 
+    private void drawEndArea() {
+        switch (startcap){
+            case 1:
+                mRect = new RectF(frame[6].x, frame[6].y, frame[4].x, frame[3].y);
+                break;
+            case 2:
+                mRect = new RectF(frame[7].x, frame[0].y, frame[5].x, frame[5].y);
+                break;
+            case 3:
+                mRect = new RectF(frame[2].x, frame[2].y, frame[7].x, frame[0].y);
+                break;
+            case 4:
+                mRect = new RectF(frame[2].x, frame[6].y, frame[6].x, frame[2].y);
+                break;
+            case 5:
+                mRect = new RectF(frame[0].x, frame[0].y, frame[7].x, frame[7].y);
+                break;
+            case 6:
+                mRect = new RectF(frame[4].x, frame[3].y, frame[1].x, frame[1].y);
+                break;
+            case 7:
+                mRect = new RectF(frame[4].x, frame[4].y, frame[3].x, frame[3].y);
+                break;
+            case 8:
+                mRect = new RectF(frame[5].x, frame[1].y, frame[1].x, frame[5].y);
+                break;
+        }
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
+        if (mRect != null) canvas.drawRect(mRect, mRectPaint);
         canvas.drawPath(mFramePath, mFramePaint);
         canvas.drawPath(mPath, mPaint);
         canvas.drawPath(mPointsPath, mPointsPaint);
@@ -123,30 +159,35 @@ public class DrawingView extends View {
         canvas.drawPath(mCirclePath, mCirclePaint);
     }
 
-    private void touch_start(float x, float y) {
+    /**
+     * Custom methods to get touch events
+     */
+    private void touch_start(PPointF p) {
         /*clean*/
         mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         mCanvas = new Canvas(mBitmap);
         capture(true);
-        addPoint(new PPointF(x,y));
+        addPoint(p);
     }
 
-    private void touch_move(float x, float y) {
-        if (x<0 || x>width || y<0 || y>height) return;
-        float dx = x;
-        float dy = y;
-        if (listPoints.size()>0) {
-            PPointF lastP = listPoints.get(listPoints.size()-1);
-            dx = Math.abs(x - lastP.x);
-            dy = Math.abs(y - lastP.y);
-        }
-        if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
-            addPoint(new PPointF(x,y));
+    private void touch_move(PPointF p) {
+        if (p.x<0 || p.x>width || p.y<0 || p.y>height) return;
+        float d = 0;
+        boolean add = false;
+        int lsize = listPoints.size();
+        if (lsize>0) {
+            PPointF lastP = listPoints.get(lsize-1);
+            d = lastP.distanceBetween(p);
+            if (d >= TOUCH_TOLERANCE) {
+                System.out.println("touch tolerance "+d+" s "+lsize);
+                addPoint(p);
+            } else System.out.println("d : " + d);
         }
     }
 
     private void touch_up() {
         mCirclePath.reset();
+        mRect = null;
         capture(false);
     }
 
@@ -157,11 +198,11 @@ public class DrawingView extends View {
             float y = event.getY();
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
-                    touch_start(x, y);
+                    touch_start(new PPointF(x, y));
                     invalidate();
                     break;
                 case MotionEvent.ACTION_MOVE:
-                    touch_move(x, y);
+                    touch_move(new PPointF(x, y));
                     invalidate();
                     break;
                 case MotionEvent.ACTION_UP:
@@ -175,21 +216,16 @@ public class DrawingView extends View {
 
     private void capture(boolean cap) {
         this.cap = cap;
-        //mFramePath.reset();
         mCursorPath.reset();
         if (cap) {
             System.out.println("start capture");
             startcap = 0;
             endcap = 0;
+            mRect = null;
             listPoints = new ArrayList<>();
             path = new ArrayList<>();
-            diagbase = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
-            diagtemp = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
-            /*for (int i = 0; i < frame.length; i++) {
-                mFramePath.moveTo(frame[i].x, frame[i].y);
-                i++;
-                mFramePath.lineTo(frame[i].x, frame[i].y);
-            }*/
+            diagBase = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
+            diagTemp = new PPointF[]{new PPointF(0f, 0f), new PPointF(0f, 0f)};
         } else if (listPoints.size() >= 2) {
             System.out.println("end capture");
             PPointF lastP = listPoints.get(listPoints.size()-1);
@@ -225,6 +261,11 @@ public class DrawingView extends View {
                 }
                 System.out.println("extremum added");
                 path = initBezier();
+                if (path==null) {
+                    System.out.println("error");
+                    mPointsPath.reset();
+                }
+                System.out.println("trajectoire terminée");
             }
             else {
                 System.out.println("wrong endcap");
@@ -289,34 +330,65 @@ public class DrawingView extends View {
         }
     }
 
-    private ArrayList<PPointF> initBezier(){
-        if (listPoints.size()>0) {
-            System.out.println("init bezier");
-            mPath.reset();
-            float ratioWidthHomothetie = (float)realWidth/width;
-            float ratioHeightHomothetie = (float)realHeight/height;
-            ArrayList<PPointF> B = new ArrayList<>();
-            int n = listPoints.size()-1;
-            float precision = 1f/step;
-            if (n>0) {
-                System.out.println("precision "+precision+" n "+n);
-                float u = 0.0f;
-                while (u <= 1f+precision) {
-                    float x = 0.0f;
-                    float y = 0.0f;
-                    for(int i=0;i<n+1;i++) {
-                        double b = (((factorialOf(n))/((factorialOf(i))*(factorialOf(n-i))))*(Math.pow(u,i))*(Math.pow((1-u),(n-i))));
-                        PPointF p = listPoints.get(i);
-                        x = (float)(x + b * p.x);
-                        y = (float)(y + b * p.y);
+    private List<PPointF> extractInterestingPoints(){
+        System.out.println("extraction des points d'interets");
+        List<PPointF> interestingPoints = new ArrayList<>();
+        int lsize = listPoints.size();
+        System.out.println("listPoints size : "+lsize);
+        if (lsize>=3) {
+            float cnt = 0;
+            interestingPoints.add(listPoints.get(0));
+            for(int i = 2; i<lsize-1;i++){
+                PPointF p = listPoints.get(i);
+                float a = PPointF.angle(listPoints.get(i-2),listPoints.get(i-1),p);
+                System.out.println(a);
+                if (a>4)
+                    interestingPoints.add(p);
+                else {
+                    cnt+=a;
+                    if (cnt>=30){
+                        cnt = 0;
+                        interestingPoints.add(p);
                     }
-                    if(B.size()==0) mPath.moveTo(x,y);
-                    else mPath.lineTo(x,y);
-                    B.add(new PPointF(x*ratioWidthHomothetie, y*ratioHeightHomothetie));
-                    u += precision;
                 }
             }
-            return B;
+            interestingPoints.add(listPoints.get(lsize-1));
+        }
+        System.out.println(interestingPoints.size()+" points d'interet extrait");
+        return interestingPoints;
+    }
+
+    private ArrayList<PPointF> initBezier(){
+        if (listPoints.size()>0) {
+            List<PPointF> interestingPoints = extractInterestingPoints();
+            if (interestingPoints.size()>=2) {
+                System.out.println("init bezier");
+                mPath.reset();
+                float ratioWidthHomothetie = (float) realWidth / width;
+                float ratioHeightHomothetie = (float) realHeight / height;
+                ArrayList<PPointF> B = new ArrayList<>();
+                int n = interestingPoints.size() - 1;
+                if (n > 0) {
+                    float u;
+                    for (int cnt = 0; cnt < step; cnt++) {
+                        float x = 0.0f;
+                        float y = 0.0f;
+                        u = (float) cnt / step;
+                        for (int i = 0; i < n + 1; i++) {
+                            double b = (((factorialOf(n)) / ((factorialOf(i)) * (factorialOf(n - i)))) * (Math.pow(u, i)) * (Math.pow((1 - u), (n - i))));
+                            PPointF p = interestingPoints.get(i);
+                            x = (float) (x + b * p.x);
+                            y = (float) (y + b * p.y);
+                        }
+                        if (B.size() == 0) mPath.moveTo(x, y);
+                        else mPath.lineTo(x, y);
+                        B.add(new PPointF(x * ratioWidthHomothetie, y * ratioHeightHomothetie));
+                    }
+                }
+                System.out.println("result besier : " + B.size() + " points");
+                return B;
+            }
+            return null;
         }
         return null;
     }
@@ -342,17 +414,18 @@ public class DrawingView extends View {
                 endcap = capIds[1];
                 System.out.println("first points : startcap "+startcap+" endcap "+endcap);
                 if (startcap == 4 || startcap == 8) {
-                    diagbase[0].set(0, height);
-                    diagbase[1].set(width, 0);
-                    System.out.println(diagbase[0]+" "+diagbase[1]);
+                    diagBase[0].set(0, height);
+                    diagBase[1].set(width, 0);
+                    System.out.println(diagBase[0]+" "+ diagBase[1]);
                     refreshDiag(p, true);
                 }
                 else if (startcap == 5 || startcap == 7) {
-                    diagbase[0].set(0, 0);
-                    diagbase[1].set(width, height);
-                    System.out.println(diagbase[0]+" "+diagbase[1]);
+                    diagBase[0].set(0, 0);
+                    diagBase[1].set(width, height);
+                    System.out.println(diagBase[0]+" "+ diagBase[1]);
                     refreshDiag(p, false);
                 }
+                drawEndArea();
             }
             if (startcap != 0 && acceptPoint (p)) {
                 refreshCursorCap(p);
@@ -368,7 +441,6 @@ public class DrawingView extends View {
     }
 
     private boolean acceptPoint(PPointF p) {
-        System.out.println(p);
         if (listPoints.size() == 0)
             return true;
         PPointF lastP = listPoints.get(listPoints.size()-1);
@@ -378,21 +450,21 @@ public class DrawingView extends View {
             return true;
         else if (startcap ==3 && p.x<lastP.x)
             return true;
-        else if (startcap ==4 && position_d_p(diagtemp[0], diagtemp[1], p)<0) {
+        else if (startcap ==4 && Line.position(diagTemp[0], diagTemp[1], p)<0) {
             refreshDiag(p, true);
             return true;
         }
-        else if (startcap ==5 && position_d_p (diagtemp[0], diagtemp[1], p)>0) {
+        else if (startcap ==5 && Line.position(diagTemp[0], diagTemp[1], p)>0) {
             refreshDiag(p, false);
             return true;
         }
         else if (startcap ==6 && p.x>lastP.x)
             return true;
-        else if (startcap ==7 && position_d_p (diagtemp[0], diagtemp[1], p)<0) {
+        else if (startcap ==7 && Line.position(diagTemp[0], diagTemp[1], p)<0) {
             refreshDiag(p, false);
             return true;
         }
-        else if (startcap ==8 && position_d_p (diagtemp[0], diagtemp[1], p)>0) {
+        else if (startcap ==8 && Line.position(diagTemp[0], diagTemp[1], p)>0) {
             refreshDiag(p, true);
             return true;
         }
@@ -405,21 +477,21 @@ public class DrawingView extends View {
         System.out.println(at);
         if (invert)
             at*=-1;
-        float xdiff = p.x-Line.calcX(p.y,0, diagbase[0].y,at);
-        float ydiff = p.y-Line.calcY(p.x,0, diagbase[0].y,at);
+        float xdiff = p.x-Line.calcX(p.y,0, diagBase[0].y,at);
+        float ydiff = p.y-Line.calcY(p.x,0, diagBase[0].y,at);
         if (xdiff<0) {
-            diagtemp[0].x = diagbase[0].x;
-            diagtemp[0].y = diagbase[0].y + ydiff;
-            diagtemp[1].x = diagbase[1].x + xdiff;
-            diagtemp[1].y = diagbase[1].y;
+            diagTemp[0].x = diagBase[0].x;
+            diagTemp[0].y = diagBase[0].y + ydiff;
+            diagTemp[1].x = diagBase[1].x + xdiff;
+            diagTemp[1].y = diagBase[1].y;
         }
         else if (xdiff>0) {
-            diagtemp[0].x = diagbase[0].x + xdiff;
-            diagtemp[0].y = diagbase[0].y;
-            diagtemp[1].x = diagbase[1].x;
-            diagtemp[1].y = diagbase[1].y + ydiff;
+            diagTemp[0].x = diagBase[0].x + xdiff;
+            diagTemp[0].y = diagBase[0].y;
+            diagTemp[1].x = diagBase[1].x;
+            diagTemp[1].y = diagBase[1].y + ydiff;
         }
-        System.out.println(diagtemp[0]+" "+diagtemp[1]);
+        System.out.println(diagTemp[0]+" "+ diagTemp[1]);
     }
 
     private void refreshCursorCap(PPointF p) {
@@ -433,13 +505,9 @@ public class DrawingView extends View {
             mCursorPath.lineTo(p.x,height);
         }
         else if (startcap==5 || startcap==7 || startcap==4 || startcap==8){
-            mCursorPath.moveTo(diagtemp[0].x,diagtemp[0].y);
-            mCursorPath.lineTo(diagtemp[1].x,diagtemp[1].y);
+            mCursorPath.moveTo(diagTemp[0].x, diagTemp[0].y);
+            mCursorPath.lineTo(diagTemp[1].x, diagTemp[1].y);
         }
-    }
-
-    private float position_d_p(PPointF p1,PPointF p2,PPointF m) {
-        return (p2.x - p1.x) * (m.y - p1.y) - (p2.y - p1.y) * (m.x - p1.x);
     }
 
     public ArrayList<PPointF> getPath() {
