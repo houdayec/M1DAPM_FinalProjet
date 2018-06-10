@@ -27,6 +27,9 @@ import dapm.g1.final_project.utils.PathUtils;
 import dapm.g1.final_project.R;
 import dapm.g1.final_project.custom_classes.CustomMediaExtractor;
 
+/**
+ * Modified by mickael alos on 30/05/2018.
+ */
 public class TypeActivity extends AppCompatActivity {
 
     /**

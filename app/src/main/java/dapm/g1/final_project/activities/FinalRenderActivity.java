@@ -52,6 +52,9 @@ import dapm.g1.final_project.utils.PathUtils;
 import dapm.g1.final_project.R;
 import dapm.g1.final_project.custom_classes.CustomMediaExtractor;
 
+/**
+ * Custom Anamorphosis added by mickael alos on 05/06/2018.
+ */
 public class FinalRenderActivity extends AppCompatActivity {
 
     /**
@@ -306,7 +309,7 @@ public class FinalRenderActivity extends AppCompatActivity {
 
             try {
                 File inputFile = new File(INPUT_FILE);   // must be an absolute path
-                System.out.println("extractMpegFrames file : " + INPUT_FILE);
+                if (VERBOSE) System.out.println("extractMpegFrames file : " + INPUT_FILE);
                 // The MediaExtractor error messages aren't very useful.  Check to see if the input
                 // file exists so we can throw a better one if it's not there.
                 if (!inputFile.canRead()) {
@@ -355,7 +358,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                         sample = 1;
                         selectFrame(frameRate, duration, stackPixels);
                     }
-                    System.out.println("start scale " + sample);
+                    if (VERBOSE) System.out.println("start scale " + sample);
                 }
 
                 // Could use width/height from the MediaFormat to get full-size frames.
@@ -548,7 +551,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                 pt = tabPointsPath[cursor];
                 pointsPath.lineTo(pt.x, pt.y);
             }
-            calcTangenteP(tabPointsPath[cursor - 1], tabPointsPath[cursor], tabPointsPath[cursor + 1], (start==1 || start==2),currentBmp,pixels);
+            calcPerpendicular(tabPointsPath[cursor - 1], tabPointsPath[cursor], tabPointsPath[cursor + 1], (start==1 || start==2),currentBmp,pixels);
         }
         else {
             calcSelectPixels(saveLine,null,currentBmp,pixels);
@@ -556,6 +559,13 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * points selection calculation between two line
+     * @param line1 fisrt line
+     * @param line2 seconde line
+     * @param bmp bipmap to pick pixels
+     * @param pixels pixels mask
+     */
     private static void calcSelectPixels(Line line1, Line line2, Bitmap bmp, int[] pixels){
         tangentesPath.reset();
         if (VERBOSE){
@@ -573,7 +583,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
         int[] currentPixel = new int[mHeight * mWidth];
         bmp.getPixels(currentPixel, 0, mWidth, 0, 0, mWidth, mHeight);
-        System.out.println("SELECT "+cursor+" "+((line1!=null)?line1.getAt():"null") +" "+((line2!=null)?line2.getAt():"null"));
+        if (VERBOSE) System.out.println("SELECT "+cursor+" "+((line1!=null)?line1.getAt():"null") +" "+((line2!=null)?line2.getAt():"null"));
         int xmin = Math.round(getMinMax(line1,line2,false,0));
         int xmax = Math.round(getMinMax(line1,line2,true,0));
         int ymin = Math.round(getMinMax(line1,line2,false,1));
@@ -666,6 +676,14 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * min/max axis getter
+     * @param line1 first line
+     * @param line2 seconde line
+     * @param type true = max getter, false = min getter
+     * @param axe >0 = y axis getter, <=0 = x axis getter
+     * @return value
+     */
     private static float getMinMax(Line line1, Line line2, boolean type, int axe) {
         if (type) {
             return Math.max((line1!=null)?Math.max(line1.getP1().get(axe),line1.getP2().get(axe)):0,(line2!=null)?Math.max(line2.getP1().get(axe),line2.getP2().get(axe)):0);
@@ -673,6 +691,14 @@ public class FinalRenderActivity extends AppCompatActivity {
         return Math.min((line1!=null)?Math.min(line1.getP1().get(axe),line1.getP2().get(axe)):Float.MAX_VALUE,(line2!=null)?Math.min(line2.getP1().get(axe),line2.getP2().get(axe)):Float.MAX_VALUE);
     }
 
+    /**
+     * horizontal scanline
+     * @param x
+     * @param y1
+     * @param y2
+     * @param pixels
+     * @param currentPixels
+     */
     private static void selectPixelsH(int x, int y1, int y2, int[] pixels, int[] currentPixels){
         if (VERBOSE) {
             selectPath.moveTo(x, y1);
@@ -685,6 +711,14 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * vertical scanline
+     * @param y
+     * @param x1
+     * @param x2
+     * @param pixels
+     * @param currentPixels
+     */
     private static void selectPixelsV(int y, int x1, int x2, int[] pixels, int[] currentPixels){
         if (VERBOSE) {
             selectPath.moveTo(x1, y);
@@ -697,6 +731,15 @@ public class FinalRenderActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * trim the tangent in order to not overflow the image
+     * @param a x shift
+     * @param b y shift
+     * @param at slope
+     * @param yval
+     * @param invert
+     * @return
+     */
     private static CustomPointF calcTangExtremum(float a, float b, float at, int yval, boolean invert) {
         float xmax = (invert)? mHeight : mWidth;
         float x = 0;
@@ -720,9 +763,21 @@ public class FinalRenderActivity extends AppCompatActivity {
         return (invert)? new CustomPointF(y, x):new CustomPointF(x, y);
     }
 
-    private static void calcTangenteP(CustomPointF p1, CustomPointF p2, CustomPointF p3, boolean invert, Bitmap currentBmp, int[] pixels) {
+    /**
+     * parabola calculation with three points
+     * parabola tangent at the point p2 calculation
+     * and perpendicular of tangent calculation
+     * @param p1 first point
+     * @param p2 second point
+     * @param p3 third point
+     * @param invert invert axis ?
+     * @param currentBmp
+     * @param pixels
+     */
+    private static void calcPerpendicular(CustomPointF p1, CustomPointF p2, CustomPointF p3, boolean invert, Bitmap currentBmp, int[] pixels) {
+        // start the calculation with axis inverted if the parabola can't be calculated
         if (!invert && ((int)Math.abs(p1.x-p2.x)==0 || (int)Math.abs(p1.x-p3.x)==0 || (int)Math.abs(p2.x-p3.x)==0)) {
-            calcTangenteP(p1, p2, p3, true,currentBmp,pixels);
+            calcPerpendicular(p1, p2, p3, true,currentBmp,pixels);
             return;
         }
 
@@ -732,6 +787,7 @@ public class FinalRenderActivity extends AppCompatActivity {
             p3 = p3.getInvert();
         }
 
+        // parabola calculation
         float A1 = -(p1.x*p1.x)+p2.x*p2.x;
         float B1 = (-p1.x) + (p2.x);
         float C1 = (-p1.y) + (p2.y);
@@ -755,6 +811,7 @@ public class FinalRenderActivity extends AppCompatActivity {
             Log.d(TAG,"f'(x)=" + (a * 2) + "x+" + b);
         }
 
+        // tangent calculation
         float at = (2 * a * p2.x + b);
         if (VERBOSE)
             Log.d(TAG,"tangente:y="+at+"*(x-"+p2.x+")+"+p2.y);
@@ -764,6 +821,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         if (VERBOSE)
             Log.d(TAG,pt1+" "+pt2);
 
+        // perpendicular calculation
         float atp = (at!=0)? -(1 / at) : 0;
 
         if (VERBOSE)
@@ -773,6 +831,7 @@ public class FinalRenderActivity extends AppCompatActivity {
         if (VERBOSE)
             Log.d(TAG,ptp1+" "+ptp2);
 
+        // pixels selection
         Line lastLine = new Line(ptp1,ptp2);
         calcSelectPixels(saveLine, lastLine, currentBmp, pixels);
         saveLine = lastLine.copy();
@@ -1070,6 +1129,10 @@ public class FinalRenderActivity extends AppCompatActivity {
             }
         }
 
+        /**
+         * launch custom anamorphosis with current bitmap frame
+         * @throws IOException
+         */
         public void saveCustomFrame() throws IOException {
             if (direction.equals("Custom")) {
                 mPixelBuf.rewind();
@@ -1136,7 +1199,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                 indexRangePixels += sample;
             }
             bmp.recycle();
-            System.out.println("frame " + idFrame);
+            if (VERBOSE) System.out.println("frame " + idFrame);
 
         }
 
@@ -1519,7 +1582,7 @@ public class FinalRenderActivity extends AppCompatActivity {
                 }
                 break;
             default:
-                System.out.println("Error on the direction");
+                if (VERBOSE) System.out.println("Error on the direction");
                 Log.e("error", "errror");
                 break;
         }
